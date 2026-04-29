@@ -154,7 +154,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   return (
-    <div className="fixed inset-x-0 top-0 z-[100] bg-background max-w-lg mx-auto overflow-y-auto" style={{ height: '100dvh', WebkitOverflowScrolling: 'touch' }}>
+    <div className="fixed inset-x-0 top-0 z-[100] bg-background max-w-lg md:max-w-6xl mx-auto overflow-y-auto" style={{ height: '100dvh', WebkitOverflowScrolling: 'touch' }}>
       <div className="min-h-full flex flex-col">
         <div className="flex items-center justify-center gap-2 pt-8 pb-4">
           {Array.from({ length: totalSteps }).map((_, i) => (

@@ -468,8 +468,10 @@ export default function Kasir() {
   const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
   return (
-    <div className="px-4 pt-6 pb-4 flex flex-col h-[calc(100vh-4rem)]">
-      {/* Header */}
+    <div className="px-4 pt-6 pb-4 h-[calc(100vh-4rem)]">
+      <div className="flex flex-col md:flex-row gap-0 md:gap-4 h-full">
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <ShoppingCart className="w-5 h-5 text-primary" />
@@ -545,7 +547,7 @@ export default function Kasir() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {filtered.map(p => (
               <Card key={p.id} className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]" onClick={() => addToCart(p)}>
                 <CardContent className="p-0">
@@ -566,13 +568,178 @@ export default function Kasir() {
             ))}
           </div>
         )}
+        </div>
       </div>
 
-      {/* Cart FAB */}
+      {/* Desktop Cart Panel */}
+      <div className="hidden md:flex md:w-80 lg:w-96 flex-col overflow-hidden bg-card rounded-xl border border-border shrink-0">
+        <div className="p-4 border-b border-border shrink-0">
+          <h3 className="text-base font-bold flex items-center gap-2">
+            <ShoppingCart className="w-4 h-4 text-primary" />
+            Keranjang ({cartCount} item)
+            {editingTxId && <span className="text-xs font-normal text-muted-foreground">— edit</span>}
+          </h3>
+        </div>
+        {cart.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <p className="text-sm text-muted-foreground">Keranjang kosong</p>
+          </div>
+        ) : (
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto space-y-3 p-4">
+              {cart.map(item => (
+                <div key={item.product.id} className="bg-muted/50 p-3 rounded-xl space-y-1.5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{item.product.name}</p>
+                      <p className="text-xs text-muted-foreground">Rp {item.product.price.toLocaleString('id-ID')} × {item.qty}</p>
+                      <p className="text-sm font-bold text-primary">{rp(getItemSubtotal(item))}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => item.qty === 1 ? removeFromCart(item.product.id!) : updateQty(item.product.id!, -1)}>
+                        {item.qty === 1 ? <X className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                      </Button>
+                      <span className="w-8 text-center text-sm font-bold">{item.qty}</span>
+                      <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => updateQty(item.product.id!, 1)}>
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {item.notes ? (
+                      <button
+                        className="flex items-center gap-1 text-[10px] text-accent bg-accent/10 px-2 py-0.5 rounded-full"
+                        onClick={() => { setEditingItemNotes(item.product.id!); setTempItemNotes(item.notes || ''); }}
+                      >
+                        <Pencil className="w-2.5 h-2.5" />
+                        {item.notes}
+                      </button>
+                    ) : (
+                      <button
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                        onClick={() => { setEditingItemNotes(item.product.id!); setTempItemNotes(''); }}
+                      >
+                        <Pencil className="w-2.5 h-2.5" />
+                        Tambah catatan
+                      </button>
+                    )}
+                  </div>
+                  {editingItemNotes === item.product.id && (
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        autoFocus
+                        value={tempItemNotes}
+                        onChange={e => setTempItemNotes(e.target.value)}
+                        placeholder="Contoh: less sugar..."
+                        className="h-8 text-xs"
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { updateItemNotes(item.product.id!, tempItemNotes); setEditingItemNotes(null); }
+                          if (e.key === 'Escape') setEditingItemNotes(null);
+                        }}
+                      />
+                      <Button size="sm" className="h-8 text-xs" onClick={() => { updateItemNotes(item.product.id!, tempItemNotes); setEditingItemNotes(null); }}>OK</Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 px-4 mb-2">
+              <div className="relative flex-1">
+                <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Nama pelanggan"
+                  value={customerName}
+                  onChange={e => setCustomerName(e.target.value)}
+                  className="pl-8 h-9 text-xs"
+                />
+              </div>
+              <div className="relative flex-[0.6]">
+                <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Meja"
+                  value={tableNumber}
+                  onChange={e => setTableNumber(e.target.value)}
+                  className="pl-8 h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="border-t pt-4 space-y-3 px-4 pb-4">
+              {txDiscountAmount > 0 ? (
+                <button
+                  onClick={() => { setTempDiscountType(txDiscountType!); setTempDiscountValue(txDiscountValue); setDiscountDialogOpen(true); }}
+                  className="flex items-center gap-1.5 text-xs text-destructive font-medium"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  Diskon: {txDiscountType === 'percentage' ? `${txDiscountValue}%` : `Rp ${Number(txDiscountValue).toLocaleString('id-ID')}`}
+                  <span className="text-[10px] underline ml-1">Ubah</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setTempDiscountType('nominal'); setTempDiscountValue(''); setDiscountDialogOpen(true); }}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>Tambah Diskon</span>
+                </button>
+              )}
+
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium">{rp(subtotal)}</span>
+              </div>
+              {txDiscountAmount > 0 && (
+                <div className="flex justify-between text-sm text-destructive">
+                  <span>Diskon</span>
+                  <span>-{rp(txDiscountAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total</span>
+                <span className="text-primary">{rp(total)}</span>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-12 text-sm font-semibold"
+                  onClick={saveOpenBill}
+                  disabled={cart.length === 0}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Simpan Bill
+                </Button>
+                <Button
+                  className="flex-1 h-12 text-sm font-semibold"
+                  onClick={() => { setCheckoutOpen(true); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Bayar
+                </Button>
+              </div>
+
+              {editingTxId && (
+                <Button
+                  variant="outline"
+                  className="w-full h-10 text-xs text-destructive border-destructive/30 hover:bg-destructive/5"
+                  onClick={handleCancelFromCart}
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                  Batalkan Bill Ini
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      </div>{/* end flex row */}
+
+      {/* Cart FAB (mobile only) */}
       {cartCount > 0 && (
         <button
           onClick={() => setCartOpen(true)}
-          className="fixed bottom-24 right-4 max-w-lg flex items-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-full shadow-xl active:scale-95 transition-transform z-40"
+          className="md:hidden fixed bottom-24 right-4 flex items-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-full shadow-xl active:scale-95 transition-transform z-40"
         >
           <ShoppingCart className="w-5 h-5" />
           <span className="font-bold text-sm">{cartCount} item</span>
@@ -580,7 +747,8 @@ export default function Kasir() {
         </button>
       )}
 
-      {/* Cart Sheet */}
+      {/* Cart Sheet (mobile only) */}
+      <div className="md:hidden">
       <Sheet open={cartOpen} onOpenChange={(open) => { setCartOpen(open); if (!open) setEditingItemNotes(null); }}>
         <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl max-w-lg mx-auto">
           <SheetHeader>
@@ -742,10 +910,11 @@ export default function Kasir() {
           </div>
         </SheetContent>
       </Sheet>
+      </div>{/* end mobile cart wrapper */}
 
       {/* Open Bills Sheet */}
       <Sheet open={openBillsOpen} onOpenChange={setOpenBillsOpen}>
-        <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl max-w-lg mx-auto">
+        <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl max-w-lg md:max-w-xl mx-auto">
           <SheetHeader>
             <SheetTitle className="text-left flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-primary" />

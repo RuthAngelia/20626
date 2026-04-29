@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => ({
         display: "standalone",
         background_color: "#0F172A",
         theme_color: "#F97316",
-        orientation: "portrait",
+        orientation: "any",
         icons: [
           {
             src: "/kasirgratisan-icon.png",

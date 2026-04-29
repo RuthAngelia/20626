@@ -318,7 +318,7 @@ export default function TransactionHistory() {
 
       {/* Detail Sheet */}
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl max-w-lg mx-auto flex flex-col">
+        <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl max-w-lg md:max-w-xl mx-auto flex flex-col">
           <SheetHeader className="shrink-0">
             <SheetTitle className="text-left">Detail Transaksi</SheetTitle>
           </SheetHeader>

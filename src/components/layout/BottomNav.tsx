@@ -13,7 +13,7 @@ const navItems = [
 export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
-      <div className="flex items-end justify-around h-16 max-w-lg mx-auto px-2">
+      <div className="flex items-end justify-around h-16 max-w-lg md:max-w-6xl mx-auto px-2 md:px-4">
         {navItems.map(({ to, icon: Icon, label, isCta }) => (
           <NavLink
             key={to}

@@ -81,7 +81,7 @@ export default function Dashboard() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-0 shadow-sm bg-primary text-primary-foreground">
           <CardContent className="p-4">
             <p className="text-xs opacity-80">Penjualan Hari Ini</p>
