@@ -20,7 +20,9 @@ A free, offline-first, open source Point of Sale (POS) Progressive Web App built
 - **Supplier Management** — Manage supplier contacts and details
 - **Backup & Restore** — Export/import all data as JSON, with automatic backup reminders
 - **PWA** — Installable to home screen, fully offline with Service Worker (Workbox), supports any orientation. Install button is also available from Settings with adaptive instructions for iOS Safari and Chrome/Edge
-- **Onboarding** — Interactive tutorial for first-time users
+- **Android APK** — Ships as a native Android app via Capacitor from the same codebase, running in parallel with the PWA. Includes app icon, splash screen, and native status bar handling
+- **Bluetooth Thermal Printing** — Print receipts to ESC/POS thermal printers. PWA uses Web Bluetooth (Chrome on Android); the Android APK uses Classic Bluetooth, with a configurable default printer selection (APK-only setting)
+- **Onboarding** — Interactive tutorial for first-time users (the PWA install step is automatically skipped in the APK)
 - **Dark Mode** — Full dark theme support
 - **Theme Customization** — Pick your preferred accent color
 
@@ -43,8 +45,9 @@ A free, offline-first, open source Point of Sale (POS) Progressive Web App built
 | Date | date-fns (id locale) |
 | PWA | vite-plugin-pwa (Workbox) |
 | Barcode | html5-qrcode (camera scanner + manual input) |
-| Receipt | html2canvas (to PNG), Web Bluetooth Print |
+| Receipt | html2canvas (to PNG), Web Bluetooth Print (PWA), Bluetooth Classic (Android APK via Capacitor) |
 | Font | Plus Jakarta Sans |
+| Native Wrapper | Capacitor 8 (Android) |
 
 ---
 
@@ -71,11 +74,45 @@ npm run dev
 
 The app will be running at `http://localhost:8080`.
 
-### Production Build
+### Production Build (PWA/Web)
 
 ```bash
 npm run build
 npm run preview
+```
+
+### Android APK Build (Capacitor)
+
+This project can also run as an Android APK using Capacitor while keeping the PWA/web version working from the same codebase.
+
+Requirements:
+
+- Android Studio installed
+- Android SDK configured
+- JDK 21 (Android Studio bundled JBR works)
+
+Build debug APK:
+
+```bash
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+npm run build
+npx cap sync android
+cd android
+./gradlew assembleDebug
+```
+
+Output APK:
+
+```bash
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Useful scripts:
+
+```bash
+npm run cap:sync      # build web bundle and sync Capacitor
+npm run cap:android   # build, sync, then open Android Studio
+npm run cap:run       # build, sync, then run on connected Android device/emulator
 ```
 
 ---
