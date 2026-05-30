@@ -51,6 +51,10 @@ export const PERMISSION_LABELS: Record<PermissionKey, { title: string; desc: str
     title: 'Kelola Supplier',
     desc: 'Tambah, edit, dan hapus data supplier',
   },
+  manage_customers: {
+    title: 'Kelola Pelanggan',
+    desc: 'Tambah, edit, dan hapus data pelanggan',
+  },
   view_reports: {
     title: 'Lihat Laporan & Profit',
     desc: 'Akses laporan penjualan, profit, HPP, dan laporan stok',

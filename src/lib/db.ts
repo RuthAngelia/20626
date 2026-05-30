@@ -8,6 +8,7 @@ export type PermissionKey =
   | 'manage_categories_payments'
   | 'manage_stock_inout'
   | 'manage_supplier'
+  | 'manage_customers'
   | 'view_reports'
   | 'manage_backup'
   | 'manage_store_settings'
@@ -21,6 +22,7 @@ export const ALL_PERMISSIONS: PermissionKey[] = [
   'manage_categories_payments',
   'manage_stock_inout',
   'manage_supplier',
+  'manage_customers',
   'view_reports',
   'manage_backup',
   'manage_store_settings',
@@ -84,6 +86,18 @@ export interface Supplier {
   deletedAt: Date | null;
 }
 
+export interface Customer {
+  id?: number;
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  notes: string;
+  createdAt: Date;
+  isDeleted: number; // 0 = active, 1 = deleted
+  deletedAt: Date | null;
+}
+
 export interface StockIn {
   id?: number;
   productId: number;
@@ -138,7 +152,8 @@ export interface Transaction {
   receiptNumber: string;
   status: 'open' | 'completed';
   orderNumber?: string;
-  customerName?: string;
+  customerId?: number; // relasi ke master pelanggan (opsional)
+  customerName?: string; // snapshot nama saat transaksi (tahan terhadap edit/hapus master)
   tableNumber?: string;
   remarks?: string;
   openedAt?: Date;
@@ -216,6 +231,7 @@ class PosDatabase extends Dexie {
   categories!: Table<Category>;
   products!: Table<Product>;
   suppliers!: Table<Supplier>;
+  customers!: Table<Customer>;
   stockIns!: Table<StockIn>;
   stockOuts!: Table<StockOut>;
   hppHistory!: Table<HppHistory>;
@@ -527,6 +543,31 @@ class PosDatabase extends Dexie {
       await prodTable.toCollection().modify((p: Partial<Product>) => {
         if (p.trackStock === undefined) p.trackStock = true;
       });
+    });
+
+    // Version 10 — Master Pelanggan (Customers)
+    // Notes:
+    //   * Tabel `customers` BARU; data lama tidak disentuh.
+    //   * `customerId` ditambahkan ke transactions (opsional) — tidak di-index
+    //     karena query pelanggan-per-transaksi belum diperlukan. `customerName`
+    //     snapshot yang sudah ada tetap dipertahankan.
+    //   * Tidak ada back-fill: transaksi lama tetap punya customerId undefined.
+    this.version(10).stores({
+      categories:        '++id, name, isDeleted',
+      products:          '++id, name, &sku, categoryId, barcode, isDeleted, createdBy, updatedBy',
+      suppliers:         '++id, name, isDeleted',
+      customers:         '++id, name, isDeleted',
+      stockIns:          '++id, productId, supplierId, date, createdBy',
+      stockOuts:         '++id, productId, date, createdBy',
+      hppHistory:        '++id, productId, date',
+      paymentMethods:    '++id, name, category',
+      transactions:      '++id, date, &receiptNumber, paymentMethodId, status, orderNumber, createdBy',
+      transactionItems:  '++id, transactionId, productId',
+      storeSettings:     '++id',
+      units:             '++id, &name, isDeleted',
+      users:             '++id, &username, role, isActive',
+      expenseCategories: '++id, name, isDeleted',
+      expenses:          '++id, date, categoryId, paymentMethodId, createdBy, isDeleted',
     });
   }
 }

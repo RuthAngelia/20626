@@ -1,4 +1,4 @@
-import { Wallet, AlertTriangle, Infinity as InfinityIcon, type LucideIcon } from 'lucide-react';
+import { Wallet, AlertTriangle, Infinity as InfinityIcon, Users as UsersIcon, type LucideIcon } from 'lucide-react';
 import { db } from './db';
 
 /**
@@ -28,6 +28,16 @@ export interface WhatsNewFeature {
 }
 
 export const FEATURES: WhatsNewFeature[] = [
+  {
+    id: '2026-05-customers',
+    title: 'Data Pelanggan',
+    description:
+      'Kelola data pelanggan dan hubungkan ke transaksi. Di kasir kamu bisa cari, pilih, atau buat pelanggan baru langsung saat jualan (tetap opsional). Buka detail pelanggan untuk lihat riwayat transaksinya.',
+    icon: UsersIcon,
+    iconColor: 'text-primary bg-primary/10',
+    publishedAt: '2026-05-30',
+    cta: { label: 'Kelola Pelanggan', to: '/customers' },
+  },
   {
     id: '2026-05-unmanaged-stock',
     title: 'Produk Tanpa Stok',

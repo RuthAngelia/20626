@@ -67,6 +67,7 @@ export async function exportBackupData() {
     categories: await db.categories.toArray(),
     products: await db.products.toArray(),
     suppliers: await db.suppliers.toArray(),
+    customers: await db.customers.toArray(),
     stockIns: await db.stockIns.toArray(),
     stockOuts: await db.stockOuts.toArray(),
     hppHistory: await db.hppHistory.toArray(),

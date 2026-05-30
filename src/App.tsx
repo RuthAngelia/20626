@@ -16,6 +16,7 @@ import Products from "./pages/Products";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import SupplierPage from "./pages/Supplier";
+import CustomersPage from "./pages/Customers";
 import StockInPage from "./pages/StockIn";
 import StockOutPage from "./pages/StockOut";
 import TransactionHistory from "./pages/TransactionHistory";
@@ -88,6 +89,14 @@ const App = () => {
                     element={
                       <ErrorBoundary>
                         <SupplierPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/customers"
+                    element={
+                      <ErrorBoundary>
+                        <CustomersPage />
                       </ErrorBoundary>
                     }
                   />

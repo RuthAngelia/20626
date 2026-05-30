@@ -366,6 +366,7 @@ export default function Pengaturan() {
           categories: await db.categories.toArray(),
           products: await db.products.toArray(),
           suppliers: await db.suppliers.toArray(),
+          customers: await db.customers.toArray(),
           stockIns: await db.stockIns.toArray(),
           stockOuts: await db.stockOuts.toArray(),
           hppHistory: await db.hppHistory.toArray(),
@@ -398,6 +399,12 @@ export default function Pengaturan() {
             await db.expenseCategories.clear();
             await db.expenses.clear();
           }
+          // Only clear customers if backup file has them (v10+ export).
+          // Older backups didn't include them; keep existing rows so the user
+          // doesn't lose locally-managed customers when restoring an older file.
+          if (Array.isArray(data.customers)) {
+            await db.customers.clear();
+          }
 
           // BulkAdd from file
           if (data.categories?.length) await db.categories.bulkAdd(data.categories);
@@ -408,6 +415,7 @@ export default function Pengaturan() {
             await db.products.bulkAdd(normalizedProducts);
           }
           if (data.suppliers?.length) await db.suppliers.bulkAdd(data.suppliers);
+          if (data.customers?.length) await db.customers.bulkAdd(data.customers);
           if (data.stockIns?.length) await db.stockIns.bulkAdd(data.stockIns);
           if (data.stockOuts?.length) await db.stockOuts.bulkAdd(data.stockOuts);
           if (data.hppHistory?.length) await db.hppHistory.bulkAdd(data.hppHistory);
@@ -479,10 +487,12 @@ export default function Pengaturan() {
             await db.units.clear();
             await db.expenseCategories.clear();
             await db.expenses.clear();
+            await db.customers.clear();
 
             if (snapshot.categories.length) await db.categories.bulkAdd(snapshot.categories);
             if (snapshot.products.length) await db.products.bulkAdd(snapshot.products);
             if (snapshot.suppliers.length) await db.suppliers.bulkAdd(snapshot.suppliers);
+            if (snapshot.customers.length) await db.customers.bulkAdd(snapshot.customers);
             if (snapshot.stockIns.length) await db.stockIns.bulkAdd(snapshot.stockIns);
             if (snapshot.stockOuts.length) await db.stockOuts.bulkAdd(snapshot.stockOuts);
             if (snapshot.hppHistory.length) await db.hppHistory.bulkAdd(snapshot.hppHistory);
@@ -675,6 +685,17 @@ export default function Pengaturan() {
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><Truck className="w-4 h-4" /></div>
                 <div className="flex-1"><p className="text-sm font-semibold">Supplier</p><p className="text-[10px] text-muted-foreground">Kelola data supplier</p></div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+        {can('manage_customers') && (
+          <Link to="/customers">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><UsersIcon className="w-4 h-4" /></div>
+                <div className="flex-1"><p className="text-sm font-semibold">Pelanggan</p><p className="text-[10px] text-muted-foreground">Kelola data pelanggan</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>

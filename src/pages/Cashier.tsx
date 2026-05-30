@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth';
 import { trackEvent } from '@/lib/analytics';
+import CustomerPicker from '@/components/CustomerPicker';
 import LockedPage from '@/components/LockedPage';
 
 interface CartItem {
@@ -53,6 +54,7 @@ export default function Kasir() {
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [lastTxItems, setLastTxItems] = useState<TransactionItemRecord[]>([]);
   const [customerName, setCustomerName] = useState('');
+  const [customerId, setCustomerId] = useState<number | undefined>(undefined);
   const [tableNumber, setTableNumber] = useState('');
   const [remarks, setRemarks] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -70,6 +72,7 @@ export default function Kasir() {
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
   const openBills = useLiveQuery(() => db.transactions.where('status').equals('open').reverse().sortBy('date'));
   const allUsers = useLiveQuery(() => db.users.toArray());
+  const customers = useLiveQuery(() => db.customers.where('isDeleted').equals(0).toArray());
 
   // Permission gate — kept render-side (not redirect) so the bottom nav stays
   // intact. All hooks above run unconditionally; we just swap the rendered tree.
@@ -92,6 +95,7 @@ export default function Kasir() {
     setPaymentMethodId('');
     setPaymentAmount('');
     setCustomerName('');
+    setCustomerId(undefined);
     setTableNumber('');
     setRemarks('');
     setIsQuickAdding(false);
@@ -215,6 +219,7 @@ export default function Kasir() {
         discountValue: Number(txDiscountValue) || 0,
         discountAmount: txDiscountAmount,
         total,
+        customerId,
         customerName: customerName.trim() || undefined,
         tableNumber: tableNumber.trim() || undefined,
         remarks: remarks.trim() || undefined,
@@ -276,6 +281,7 @@ export default function Kasir() {
         date: now,
         receiptNumber,
         status: 'open',
+        customerId,
         customerName: customerName.trim() || undefined,
         tableNumber: tableNumber.trim() || undefined,
         remarks: remarks.trim() || undefined,
@@ -334,6 +340,7 @@ export default function Kasir() {
     setTxDiscountType(tx.discountType);
     setTxDiscountValue(tx.discountType ? String(tx.discountValue) : '');
     setCustomerName(tx.customerName || '');
+    setCustomerId(tx.customerId);
     setTableNumber(tx.tableNumber || '');
     setRemarks(tx.remarks || '');
     setOpenBillsOpen(false);
@@ -393,6 +400,7 @@ export default function Kasir() {
         paymentAmount: paidAmount,
         change,
         profit: totalProfit,
+        customerId,
         customerName: customerName.trim() || undefined,
         tableNumber: tableNumber.trim() || undefined,
         remarks: remarks.trim() || undefined,
@@ -458,6 +466,7 @@ export default function Kasir() {
         date: new Date(),
         receiptNumber,
         status: 'completed',
+        customerId,
         customerName: customerName.trim() || undefined,
         tableNumber: tableNumber.trim() || undefined,
         remarks: remarks.trim() || undefined,
@@ -758,15 +767,13 @@ export default function Kasir() {
             </div>
 
             <div className="flex gap-2 px-4 mb-2">
-              <div className="relative flex-1">
-                <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Nama pelanggan"
-                  value={customerName}
-                  onChange={e => setCustomerName(e.target.value)}
-                  className="pl-8 h-9 text-xs"
-                />
-              </div>
+              <CustomerPicker
+                customers={customers ?? []}
+                value={customerName}
+                customerId={customerId}
+                onChange={(name, id) => { setCustomerName(name); setCustomerId(id); }}
+                className="flex-1 [&_input]:h-9 [&_input]:text-xs"
+              />
               <div className="relative flex-[0.6]">
                 <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
@@ -955,15 +962,13 @@ export default function Kasir() {
 
             {/* Customer / Table quick inputs */}
             <div className="flex gap-2 mb-2">
-              <div className="relative flex-1">
-                <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Nama pelanggan"
-                  value={customerName}
-                  onChange={e => setCustomerName(e.target.value)}
-                  className="pl-8 h-9 text-xs"
-                />
-              </div>
+              <CustomerPicker
+                customers={customers ?? []}
+                value={customerName}
+                customerId={customerId}
+                onChange={(name, id) => { setCustomerName(name); setCustomerId(id); }}
+                className="flex-1 [&_input]:h-9 [&_input]:text-xs"
+              />
               <div className="relative flex-[0.6]">
                 <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
@@ -1165,15 +1170,13 @@ export default function Kasir() {
 
             <div className="space-y-2">
               <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <User className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                  <Input
-                    placeholder="Nama pelanggan"
-                    value={customerName}
-                    onChange={e => setCustomerName(e.target.value)}
-                    className="pl-8 h-10 text-sm"
-                  />
-                </div>
+                <CustomerPicker
+                  customers={customers ?? []}
+                  value={customerName}
+                  customerId={customerId}
+                  onChange={(name, id) => { setCustomerName(name); setCustomerId(id); }}
+                  className="flex-1 [&_input]:h-10 [&_input]:text-sm"
+                />
                 <div className="relative flex-[0.7]">
                   <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
