@@ -704,7 +704,28 @@ export default function Kasir() {
                       <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => item.qty === 1 ? removeFromCart(item.product.id!) : updateQty(item.product.id!, -1)}>
                         {item.qty === 1 ? <X className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
                       </Button>
-                      <span className="w-8 text-center text-sm font-bold">{item.qty}</span>
+                      <input
+                        key={item.qty}
+                        type="number"
+                        inputMode="numeric"
+                        defaultValue={item.qty}
+                        onBlur={e => {
+                          const val = parseInt(e.target.value);
+                          if (!isNaN(val) && val >= 1) {
+                            if (isStockManaged(item.product) && val > item.product.stock) {
+                              toast.error(`Stok tidak cukup, maksimal ${item.product.stock}`);
+                              e.target.value = String(item.product.stock);
+                              setCart(prev => prev.map(c => c.product.id === item.product.id ? { ...c, qty: item.product.stock } : c));
+                            } else {
+                              setCart(prev => prev.map(c => c.product.id === item.product.id ? { ...c, qty: val } : c));
+                            }
+                          } else {
+                            e.target.value = String(item.qty);
+                          }
+                        }}
+                        onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        className="w-10 h-8 text-center text-sm font-bold bg-transparent border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
                       <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => updateQty(item.product.id!, 1)}>
                         <Plus className="w-3 h-3" />
                       </Button>
@@ -896,7 +917,28 @@ export default function Kasir() {
                       <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => item.qty === 1 ? removeFromCart(item.product.id!) : updateQty(item.product.id!, -1)}>
                         {item.qty === 1 ? <X className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
                       </Button>
-                      <span className="w-8 text-center text-sm font-bold">{item.qty}</span>
+                      <input
+                        key={item.qty}
+                        type="number"
+                        inputMode="numeric"
+                        defaultValue={item.qty}
+                        onBlur={e => {
+                          const val = parseInt(e.target.value);
+                          if (!isNaN(val) && val >= 1) {
+                            if (isStockManaged(item.product) && val > item.product.stock) {
+                              toast.error(`Stok tidak cukup, maksimal ${item.product.stock}`);
+                              e.target.value = String(item.product.stock);
+                              setCart(prev => prev.map(c => c.product.id === item.product.id ? { ...c, qty: item.product.stock } : c));
+                            } else {
+                              setCart(prev => prev.map(c => c.product.id === item.product.id ? { ...c, qty: val } : c));
+                            }
+                          } else {
+                            e.target.value = String(item.qty);
+                          }
+                        }}
+                        onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                        className="w-10 h-8 text-center text-sm font-bold bg-transparent border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
                       <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={() => updateQty(item.product.id!, 1)}>
                         <Plus className="w-3 h-3" />
                       </Button>
@@ -1133,9 +1175,14 @@ export default function Kasir() {
 
             <div className="space-y-1.5">
               <p className="text-sm font-medium">Jumlah Bayar</p>
-              <div className="h-12 flex items-center justify-center rounded-md border border-input bg-background text-lg font-bold text-center px-3">
-                {paidAmount > 0 ? `Rp ${paidAmount.toLocaleString('id-ID')}` : 'Rp 0'}
-              </div>
+              <Input
+                type="number"
+                inputMode="numeric"
+                value={paymentAmount === '0' ? '' : paymentAmount}
+                onChange={e => { setPaymentAmount(e.target.value || '0'); setIsQuickAdding(true); }}
+                placeholder="Masukkan jumlah bayar..."
+                className="h-12 text-lg font-bold text-center"
+              />
               <div className="flex flex-wrap gap-1.5">
                 {[1000, 2000, 5000, 10000, 20000, 50000, 100000].map(nom => (
                   <button
