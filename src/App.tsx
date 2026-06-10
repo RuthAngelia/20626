@@ -25,6 +25,12 @@ import TransactionHistory from "./pages/TransactionHistory";
 import StockReport from "./pages/StockReport";
 import UsersPage from "./pages/Users";
 import ExpensesPage from "./pages/Expenses";
+import PaymentMethodsSettings from "./pages/settings/PaymentMethodsSettings";
+import ProductCategoriesSettings from "./pages/settings/ProductCategoriesSettings";
+import ExpenseCategoriesSettings from "./pages/settings/ExpenseCategoriesSettings";
+import UnitsSettings from "./pages/settings/UnitsSettings";
+import ThemeSettings from "./pages/settings/ThemeSettings";
+import BackupRestoreSettings from "./pages/settings/BackupRestoreSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -154,6 +160,54 @@ const App = () => {
                     element={
                       <ErrorBoundary>
                         <ExpensesPage />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/settings/payment-methods"
+                    element={
+                      <ErrorBoundary>
+                        <PaymentMethodsSettings />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/settings/product-category"
+                    element={
+                      <ErrorBoundary>
+                        <ProductCategoriesSettings />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/settings/expense-category"
+                    element={
+                      <ErrorBoundary>
+                        <ExpenseCategoriesSettings />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/settings/units"
+                    element={
+                      <ErrorBoundary>
+                        <UnitsSettings />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/settings/theme"
+                    element={
+                      <ErrorBoundary>
+                        <ThemeSettings />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/settings/backup"
+                    element={
+                      <ErrorBoundary>
+                        <BackupRestoreSettings />
                       </ErrorBoundary>
                     }
                   />
