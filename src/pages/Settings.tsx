@@ -296,7 +296,7 @@ export default function Pengaturan() {
 
       {/* Cloud Backup — featured, status-aware */}
       {can('manage_backup') && (
-        <Link to="/settings/cloud-backup">
+        <Link to="/settings/cloud-backup" className="block mt-2">
           <Card className={`border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden ring-1 ${cloudStatus.theme}`}>
             <CardContent className="p-4 flex items-center gap-3">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${cloudStatus.iconWrap}`}>
