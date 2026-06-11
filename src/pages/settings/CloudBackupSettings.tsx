@@ -324,33 +324,36 @@ export default function CloudBackupSettings() {
             </CardContent>
           </Card>
 
-          {/* Menu (subscribed only) */}
-          {isSubscribed && (
-            <div className="space-y-2">
-              <MenuCard
-                to="/settings/cloud-backup/auto"
-                icon={<Clock className="w-4 h-4" />}
-                title="Pengaturan Backup Otomatis"
-                subtitle={intervalSubtitle}
-              />
-              <MenuCard
-                to="/settings/cloud-backup/backups"
-                icon={<HardDrive className="w-4 h-4" />}
-                title="Backup Tersimpan"
-                subtitle={
-                  backupCount === null
-                    ? (usage ? fmtMb(usage.usedMb) : '—')
-                    : `${backupCount} backup${usage ? ` · ${fmtMb(usage.usedMb)}` : ''}`
-                }
-              />
-              <MenuCard
-                to="/settings/cloud-backup/history"
-                icon={<History className="w-4 h-4" />}
-                title="Riwayat Transaksi"
-                subtitle="Lihat pembelian & status pembayaran"
-              />
-            </div>
-          )}
+          <div className="space-y-2">
+            {/* Auto-backup & backup tersimpan butuh langganan aktif */}
+            {isSubscribed && (
+              <>
+                <MenuCard
+                  to="/settings/cloud-backup/auto"
+                  icon={<Clock className="w-4 h-4" />}
+                  title="Pengaturan Backup Otomatis"
+                  subtitle={intervalSubtitle}
+                />
+                <MenuCard
+                  to="/settings/cloud-backup/backups"
+                  icon={<HardDrive className="w-4 h-4" />}
+                  title="Backup Tersimpan"
+                  subtitle={
+                    backupCount === null
+                      ? (usage ? fmtMb(usage.usedMb) : '—')
+                      : `${backupCount} backup${usage ? ` · ${fmtMb(usage.usedMb)}` : ''}`
+                  }
+                />
+              </>
+            )}
+            {/* Riwayat transaksi selalu tampil saat login — agar bisa cek pembayaran PENDING walau belum berlangganan */}
+            <MenuCard
+              to="/settings/cloud-backup/history"
+              icon={<History className="w-4 h-4" />}
+              title="Riwayat Transaksi"
+              subtitle="Lihat pembelian & cek status pembayaran"
+            />
+          </div>
         </>
       )}
     </div>

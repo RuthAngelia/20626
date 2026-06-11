@@ -74,7 +74,8 @@ export default function StockInPage() {
     // Calculate new weighted average HPP
     const oldStock = product.stock;
     const oldHpp = product.hpp;
-    const newStock = oldStock + qty;
+    // Bulatkan ke 6 desimal untuk menghilangkan artefak floating-point.
+    const newStock = Math.round((oldStock + qty) * 1e6) / 1e6;
     const newHpp = newStock > 0 ? ((oldStock * oldHpp) + (qty * price)) / newStock : price;
 
     // Save HPP history
@@ -185,11 +186,11 @@ export default function StockInPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Jumlah *</Label>
-                <NumberInput value={quantity} onChange={setQuantity} placeholder="10" className="h-11" />
+                <NumberInput value={quantity} onChange={setQuantity} placeholder="10" className="h-11" decimal />
               </div>
               <div className="space-y-1.5">
                 <Label>Harga Beli/Unit *</Label>
-                <NumberInput value={buyPrice} onChange={setBuyPrice} placeholder="5000" className="h-11" />
+                <NumberInput value={buyPrice} onChange={setBuyPrice} placeholder="5000" className="h-11" decimal />
               </div>
             </div>
             {quantity && buyPrice && (

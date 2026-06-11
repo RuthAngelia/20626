@@ -67,7 +67,8 @@ export default function StockOutPage() {
     });
 
     await db.products.update(product.id!, {
-      stock: product.stock - qty,
+      // Bulatkan ke 6 desimal untuk menghilangkan artefak floating-point.
+      stock: Math.round((product.stock - qty) * 1e6) / 1e6,
       updatedAt: new Date(),
     });
 
@@ -138,7 +139,7 @@ export default function StockOutPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Jumlah *</Label>
-                <NumberInput value={quantity} onChange={setQuantity} placeholder="1" className="h-11" />
+                <NumberInput value={quantity} onChange={setQuantity} placeholder="1" className="h-11" decimal />
               </div>
               <div className="space-y-1.5">
                 <Label>Alasan *</Label>
@@ -151,7 +152,7 @@ export default function StockOutPage() {
             {selectedProduct && quantity && (
               <div className="bg-muted/50 p-3 rounded-xl text-sm">
                 <span className="text-muted-foreground">Stok setelah: </span>
-                <span className="font-bold">{selectedProduct.stock - Number(quantity)} {selectedProduct.unit}</span>
+                <span className="font-bold">{Math.round((selectedProduct.stock - Number(quantity)) * 1e6) / 1e6} {selectedProduct.unit}</span>
               </div>
             )}
             <div className="space-y-1.5"><Label>Catatan</Label><Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Opsional" className="h-11" /></div>
