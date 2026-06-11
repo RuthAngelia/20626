@@ -13,6 +13,8 @@ interface ProductPickerProps {
   /** Optional extra filter, e.g. only products with stock > 0 */
   filter?: (p: Product) => boolean;
   placeholder?: string;
+  /** Tampilkan HPP terakhir pada kartu produk terpilih (mis. halaman stock). */
+  showHpp?: boolean;
 }
 
 export default function ProductPicker({
@@ -21,6 +23,7 @@ export default function ProductPicker({
   onChange,
   filter,
   placeholder = 'Cari nama, SKU, atau barcode...',
+  showHpp = false,
 }: ProductPickerProps) {
   const [query, setQuery] = useState('');
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -55,6 +58,11 @@ export default function ProductPicker({
             {selected.sku}
             {selected.barcode ? ` · ${selected.barcode}` : ''} · stok: {selected.stock} {selected.unit}
           </p>
+          {showHpp && (
+            <p className="text-xs text-muted-foreground">
+              HPP terakhir: Rp {selected.hpp.toLocaleString('id-ID')}
+            </p>
+          )}
         </div>
         <Button
           type="button"

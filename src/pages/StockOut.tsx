@@ -132,6 +132,7 @@ export default function StockOutPage() {
                 value={productId}
                 onChange={setProductId}
                 filter={p => isStockManaged(p) && p.stock > 0}
+                showHpp
               />
             </div>
             <div className="grid grid-cols-2 gap-3">

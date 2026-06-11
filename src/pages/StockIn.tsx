@@ -169,6 +169,7 @@ export default function StockInPage() {
                 value={productId}
                 onChange={setProductId}
                 filter={p => isStockManaged(p)}
+                showHpp
               />
             </div>
             <div className="space-y-1.5">
