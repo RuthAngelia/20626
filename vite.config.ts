@@ -68,6 +68,9 @@ export default defineConfig(({ mode }) => ({
       },
     }),
   ].filter(Boolean),
+  build: {
+    target: "es2022",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
