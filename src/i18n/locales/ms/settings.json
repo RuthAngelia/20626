@@ -9,15 +9,7 @@
       "selectStore": "PILIH KEDAI",
       "needsSetup": "PERLU DIATUR",
       "active": "AKTIF"
-    },
-    "desc": {
-      "inactive": "Aktifkan Cloud Sync untuk memantau laporan kedai secara real-time di dashboard.freekasir.com — akses dari mana-mana peranti, data selamat walaupun peranti hilang atau bertukar.",
-      "selectStore": "Langganan aktif, tetapi peranti belum disambungkan ke kedai. Pilih kedai untuk menyelaraskan data.",
-      "needsSetup": "Kedai telah disambungkan, tetapi penyelarasan automatik belum diaktifkan. Tetapkan jadual agar data diselaras secara rutin.",
-      "active": "Penyelarasan aktif. Pantau laporan kedai secara real-time di dashboard.freekasir.com dari mana-mana peranti."
-    },
-    "lastSync": "Selaras terakhir: {{time}}",
-    "neverSynced": "Belum pernah diselaraskan"
+    }
   },
   "installApp": {
     "title": "Pasang sebagai Aplikasi",
@@ -55,33 +47,6 @@
       "title": "Multi-User Aktif",
       "description": "Pekerja mesti log masuk untuk akses kasir",
       "disable": "Nyahaktifkan"
-    },
-    "activateDialog": {
-      "title": "Aktifkan Multi-User",
-      "description": "Buat akaun pemilik. Selepas aktif, anda perlu log masuk dengan username & PIN ini setiap kali buka aplikasi. Data kedai anda kekal utuh.",
-      "nameLabel": "Nama Anda",
-      "namePlaceholder": "Cth: Pak Ali",
-      "usernameLabel": "Username",
-      "usernamePlaceholder": "Cth: owner",
-      "usernameHint": "3-20 aksara, huruf/angka/garis bawah. Tidak boleh ditukar.",
-      "pinLabel": "PIN",
-      "pinPlaceholder": "4-6 digit nombor",
-      "pinConfirmLabel": "Sahkan PIN",
-      "pinConfirmPlaceholder": "Taip semula PIN",
-      "warningTitle": "Penting:",
-      "warningText": "Simpan username & PIN dengan baik. Jika terlupa, satu-satunya cara untuk reset adalah dengan memadam data aplikasi (data kedai juga terpadam). Pastikan anda telah backup.",
-      "submitting": "Mengaktifkan…",
-      "submit": "Aktifkan Multi-User"
-    },
-    "disableDialog": {
-      "title": "Nyahaktifkan Multi-User?",
-      "description": "Aplikasi akan kembali ke mod tanpa log masuk. Akaun pekerja akan disimpan dan akan aktif semula jika multi-user diaktifkan lagi. Data transaksi kekal utuh.",
-      "confirm": "Nyahaktifkan"
-    },
-    "logoutDialog": {
-      "title": "Log Keluar?",
-      "description": "Anda akan dihalakan ke halaman log masuk. Pastikan tiada bil terbuka yang belum disimpan.",
-      "confirm": "Log Keluar"
     }
   },
   "transactionsAndStock": {
@@ -208,5 +173,114 @@
     "createOwnerFailed": "Gagal membuat akaun pemilik",
     "multiUserEnabled": "Multi-user aktif. Anda log masuk sebagai pemilik.",
     "multiUserDisabled": "Multi-user dinyahaktifkan"
+  },
+  "cloudBackup": {
+    "locked": {
+      "title": "Cloud Sync",
+      "permissionLabel": "Urus Backup"
+    },
+    "hero": {
+      "title": "Pantau Kedai Real-Time<br />dari Mana Saja",
+      "description": "Data kasir otomatis selaras ke cloud. Lihat laporan lengkap bila-bila masa lewat {{dashboard}} — dari HP atau laptop mana pun.",
+      "startFrom": "Mulai",
+      "perMonth": "/bulan"
+    },
+    "benefits": {
+      "realtime": {
+        "title": "Laporan real-time",
+        "desc": "Omzet, untung, & stok sentiasa selaras dengan transaksi terbaru di kasir."
+      },
+      "dashboard": {
+        "title": "Dashboard web",
+        "desc": "Buka di {{dashboard}} lewat pelayar — pemilik tak perlu pegang HP kasir."
+      },
+      "safe": {
+        "title": "Data selamat di cloud",
+        "desc": "Tersimpan otomatis & kekal utuh walau HP hilang, rosak, atau ganti peranti."
+      }
+    },
+    "loginPrompt": "Mulai sekarang, login dulu yuk 👇",
+    "continueWithGoogle": "Terus dengan Google",
+    "loginHint": "Selamat & pantas — tanpa kata laluan baru.",
+    "previewDashboard": "Intip {{dashboard}} →",
+    "account": {
+      "fallbackName": "Akaun Google",
+      "logout": "Log Keluar"
+    },
+    "syncNow": "Sync Sekarang",
+    "lastSync": "Selaras terakhir: {{time}}",
+    "neverSynced": "Belum pernah diselaraskan",
+    "manageFromAnywhere": "Urus kedai dari mana saja",
+    "subscription": {
+      "description": "Pantau laporan jualan, stok, & kewangan kedai dari mana saja — cukup buka di HP atau laptop lain. Semua data tersimpan selamat di cloud, kekal utuh walau peranti hilang, rosak, atau ganti HP.",
+      "loadingPlans": "Memuat pakej…",
+      "activePlan": "(pakej aktif)",
+      "unlimitedStores": "Unlimited",
+      "store_one": "{{count}} kedai",
+      "store_other": "{{count}} kedai",
+      "estimatedBackups": "≈ {{count}} fail backup",
+      "estimateNote": "*Anggaran berdasarkan saiz data semasa ({{size}}).",
+      "subscribe": "Langganan",
+      "renew": "Perpanjang",
+      "choose": "Pilih",
+      "extendOrChange": "Pilih pakej sama untuk memperpanjang, atau pakej lain untuk tukar.",
+      "close": "Tutup",
+      "changePlan": "Tukar Pakej",
+      "used": "terpakai",
+      "from": "dari",
+      "until": "s/d {{date}}"
+    },
+    "noStore": {
+      "title": "Belum ada kedai di cloud",
+      "description": "Langganan aktif, tapi data <0>belum diselaraskan</0> kerana belum ada kedai. Buat kedai dulu agar laporan muncul di dashboard.",
+      "createStore": "Buat Kedai Sekarang"
+    },
+    "deviceNotLinked": {
+      "title": "Peranti belum terhubung ke kedai",
+      "description": "Pilih kedai agar data boleh diselaraskan ke cloud.",
+      "select": "Pilih"
+    },
+    "menu": {
+      "dashboard": {
+        "title": "Buka Dashboard Web",
+        "subtitle": "Lihat laporan di {{dashboard}}"
+      },
+      "manageStore": {
+        "title": "Urus Kedai",
+        "subtitle": "Pilih atau buat kedai untuk sync"
+      },
+      "autoSync": {
+        "title": "Penyelarasan Otomatis"
+      },
+      "history": {
+        "title": "Sejarah Transaksi",
+        "subtitle": "Lihat pembelian & cek status pembayaran"
+      }
+    },
+    "interval": {
+      "off": "Nonaktif",
+      "hourly": "Setiap beberapa jam",
+      "daily": "Harian",
+      "weekly": "Mingguan",
+      "everyNHours": "Setiap {{hours}} jam"
+    },
+    "toast": {
+      "loginFailed": "Login Google gagal",
+      "checkoutFailed": "Gagal memulakan pembayaran",
+      "paymentSuccess": "Pembayaran berjaya! Langganan aktif. 🎉",
+      "paymentNotDetected": "Pembayaran belum dikesan. Selesaikan dulu pembayarannya, ya.",
+      "verifyFailed": "Gagal verifikasi pembayaran",
+      "selectStoreFirst": "Pilih kedai terlebih dahulu di menu Urus Kedai.",
+      "syncSuccess": "Penyelarasan ke cloud berjaya",
+      "syncFailed": "Gagal menyelaraskan ke cloud"
+    },
+    "paymentDialog": {
+      "title": "Menunggu Pembayaran",
+      "description": "Selesaikan pembayaran di halaman yang terbuka. Status langganan akan aktif otomatis selepas pembayaran kami terima.",
+      "checking": "Memeriksa status pembayaran otomatis setiap beberapa saat…",
+      "iHavePaid": "Saya sudah bayar — Cek sekarang",
+      "openPaymentPage": "Buka halaman pembayaran",
+      "close": "Tutup"
+    }
   }
 }

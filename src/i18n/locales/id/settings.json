@@ -208,5 +208,529 @@
     "createOwnerFailed": "Gagal membuat akun pemilik",
     "multiUserEnabled": "Multi-user aktif. Anda login sebagai pemilik.",
     "multiUserDisabled": "Multi-user dinonaktifkan"
+  },
+  "cloudBackup": {
+    "locked": {
+      "title": "Cloud Sync",
+      "permissionLabel": "Kelola Backup"
+    },
+    "hero": {
+      "title": "Pantau Toko Real-Time<br />dari Mana Saja",
+      "description": "Data kasir otomatis sinkron ke cloud. Lihat laporan lengkap kapan saja lewat {{dashboard}} — dari HP atau laptop mana pun.",
+      "startFrom": "Mulai",
+      "perMonth": "/bulan"
+    },
+    "benefits": {
+      "realtime": {
+        "title": "Laporan real-time",
+        "desc": "Omzet, laba, & stok selalu sinkron dengan transaksi terbaru di kasir."
+      },
+      "dashboard": {
+        "title": "Dashboard web",
+        "desc": "Buka di {{dashboard}} lewat browser — owner tak perlu pegang HP kasir."
+      },
+      "safe": {
+        "title": "Data aman di cloud",
+        "desc": "Tersimpan otomatis & tetap utuh walau HP hilang, rusak, atau ganti perangkat."
+      }
+    },
+    "loginPrompt": "Mulai sekarang, login dulu yuk 👇",
+    "continueWithGoogle": "Lanjut dengan Google",
+    "loginHint": "Aman & cepat — tanpa password baru.",
+    "previewDashboard": "Intip {{dashboard}} →",
+    "account": {
+      "fallbackName": "Akun Google",
+      "logout": "Keluar"
+    },
+    "syncNow": "Sync Sekarang",
+    "lastSync": "Terakhir sync: {{time}}",
+    "neverSynced": "Belum pernah disinkronkan",
+    "manageFromAnywhere": "Kelola toko dari mana saja",
+    "subscription": {
+      "description": "Pantau laporan penjualan, stok, & keuangan toko dari mana saja — cukup buka di HP atau laptop lain. Semua data tersimpan aman di cloud, tetap utuh walau perangkat hilang, rusak, atau ganti HP.",
+      "loadingPlans": "Memuat paket…",
+      "activePlan": "(paket aktif)",
+      "unlimitedStores": "Unlimited",
+      "store_one": "{{count}} toko",
+      "store_other": "{{count}} toko",
+      "estimatedBackups": "≈ {{count}} file backup",
+      "estimateNote": "*Estimasi berdasarkan ukuran data saat ini ({{size}}).",
+      "subscribe": "Langganan",
+      "renew": "Perpanjang",
+      "choose": "Pilih",
+      "extendOrChange": "Pilih paket sama untuk memperpanjang, atau paket lain untuk ganti.",
+      "close": "Tutup",
+      "changePlan": "Ubah Paket",
+      "used": "terpakai",
+      "from": "dari",
+      "until": "s/d {{date}}"
+    },
+    "noStore": {
+      "title": "Belum ada toko di cloud",
+      "description": "Langganan aktif, tapi data <0>belum tersinkron</0> karena belum ada toko. Buat toko dulu agar laporan muncul di dashboard.",
+      "createStore": "Buat Toko Sekarang"
+    },
+    "deviceNotLinked": {
+      "title": "Device belum terhubung ke toko",
+      "description": "Pilih toko agar data bisa disinkronkan ke cloud.",
+      "select": "Pilih"
+    },
+    "menu": {
+      "dashboard": {
+        "title": "Buka Dashboard Web",
+        "subtitle": "Lihat laporan di {{dashboard}}"
+      },
+      "manageStore": {
+        "title": "Kelola Toko",
+        "subtitle": "Pilih atau buat toko untuk sync"
+      },
+      "autoSync": {
+        "title": "Sinkronisasi Otomatis"
+      },
+      "history": {
+        "title": "Riwayat Transaksi",
+        "subtitle": "Lihat pembelian & cek status pembayaran"
+      }
+    },
+    "interval": {
+      "off": "Nonaktif",
+      "hourly": "Setiap beberapa jam",
+      "daily": "Harian",
+      "weekly": "Mingguan",
+      "everyNHours": "Setiap {{hours}} jam"
+    },
+    "toast": {
+      "loginFailed": "Login Google gagal",
+      "checkoutFailed": "Gagal memulai pembayaran",
+      "paymentSuccess": "Pembayaran berhasil! Langganan aktif. 🎉",
+      "paymentNotDetected": "Pembayaran belum terdeteksi. Selesaikan dulu pembayarannya, ya.",
+      "verifyFailed": "Gagal verifikasi pembayaran",
+      "selectStoreFirst": "Pilih toko terlebih dahulu di menu Kelola Toko.",
+      "syncSuccess": "Sinkronisasi ke cloud berhasil",
+      "syncFailed": "Gagal sinkronisasi ke cloud"
+    },
+    "paymentDialog": {
+      "title": "Menunggu Pembayaran",
+      "description": "Selesaikan pembayaran di halaman yang terbuka. Status langganan akan aktif otomatis setelah pembayaran kami terima.",
+      "checking": "Memeriksa status pembayaran otomatis setiap beberapa detik…",
+      "iHavePaid": "Saya sudah bayar — Cek sekarang",
+      "openPaymentPage": "Buka halaman pembayaran",
+      "close": "Tutup"
+    }
+  },
+  "transactionHistory": {
+    "title": "Riwayat Transaksi",
+    "searchPlaceholder": "Cari no. struk atau nama produk...",
+    "dateFrom": "Dari tanggal",
+    "dateTo": "Sampai tanggal",
+    "status": {
+      "all": "Semua",
+      "open": "Open Bill",
+      "completed": "Lunas"
+    },
+    "cashierFilter": {
+      "placeholder": "Filter Kasir",
+      "all": "Semua Kasir",
+      "unknown": "Tanpa Kasir (data lama)",
+      "cashierLabel": "{{name}} (@{{username}})"
+    },
+    "summary": {
+      "totalTransactions": "Total Transaksi",
+      "totalSales": "Total Penjualan"
+    },
+    "empty": {
+      "noDateFilter": "Belum ada transaksi",
+      "withDateFilter": "Tidak ada transaksi di rentang tanggal ini"
+    },
+    "groupHeader_zero": "{{date}} · {{count}} transaksi",
+    "groupHeader_one": "{{date}} · {{count}} transaksi",
+    "groupHeader_other": "{{date}} · {{count}} transaksi",
+    "badges": {
+      "open": "Open",
+      "debt": "Hutang",
+      "paid": "Lunas"
+    },
+    "cashFallback": "Tunai",
+    "detail": {
+      "title": "Detail Transaksi",
+      "status": {
+        "label": "Status",
+        "open": "Open Bill",
+        "paid": "Lunas"
+      },
+      "receiptNumber": "No. Struk",
+      "date": "Tanggal",
+      "payment": "Pembayaran",
+      "cashier": "Kasir",
+      "customer": "Pelanggan",
+      "table": "Meja {{number}}",
+      "notes": "Catatan",
+      "items": "Item",
+      "quantityFormat": "{{qty}} × {{price}}",
+      "discount": "diskon {{amount}}",
+      "subtotal": "Subtotal",
+      "discountAmount": "Diskon",
+      "total": "Total",
+      "remainingDebt": "Sisa Hutang",
+      "paid": "Bayar",
+      "change": "Kembali",
+      "profit": "Profit",
+      "unpaidBill": "Bill belum dibayar",
+      "continueInCashier": "Lanjutkan di Kasir",
+      "viewReceipt": "Lihat & Cetak Struk",
+      "delete": "Hapus Transaksi",
+      "noDeletePermission": "Anda tidak punya akses untuk menghapus transaksi"
+    },
+    "deleteDialog": {
+      "title": "Hapus Transaksi?",
+      "description": "Transaksi {{receiptNumber}} senilai {{amount}} akan dihapus permanen.",
+      "restoreStock": "Kembalikan stok produk",
+      "cancel": "Batal",
+      "confirm": "Hapus"
+    },
+    "toast": {
+      "hasDebtPayments": "Transaksi tidak dapat dihapus karena sudah memiliki pembayaran hutang",
+      "deleteSuccess": "Transaksi berhasil dihapus",
+      "deleteFailed": "Gagal menghapus transaksi"
+    }
+  },
+  "supplier": {
+    "locked": {
+      "title": "Supplier",
+      "permissionLabel": "Kelola Supplier"
+    },
+    "title": "Supplier",
+    "add": "Tambah",
+    "searchPlaceholder": "Cari supplier...",
+    "count_zero": "{{count}} supplier",
+    "count_one": "{{count}} supplier",
+    "count_other": "{{count}} supplier",
+    "empty": {
+      "title": "Belum ada supplier",
+      "add": "Tambah Supplier"
+    },
+    "dialog": {
+      "addTitle": "Tambah Supplier",
+      "editTitle": "Edit Supplier",
+      "nameLabel": "Nama Supplier *",
+      "namePlaceholder": "Contoh: PT Sumber Jaya",
+      "phoneLabel": "Telepon",
+      "phonePlaceholder": "08123456789",
+      "addressLabel": "Alamat",
+      "addressPlaceholder": "Alamat supplier",
+      "notesLabel": "Catatan",
+      "notesPlaceholder": "Catatan tambahan",
+      "save": "Simpan"
+    },
+    "deleteDialog": {
+      "title": "Hapus Supplier?",
+      "description": "Data supplier yang dihapus tidak bisa dikembalikan.",
+      "cancel": "Batal",
+      "confirm": "Hapus"
+    },
+    "toast": {
+      "updated": "Supplier diperbarui",
+      "added": "Supplier ditambahkan",
+      "deleted": "Supplier dihapus"
+    }
+  },
+  "customers": {
+    "locked": {
+      "title": "Pelanggan",
+      "permissionLabel": "Kelola Pelanggan"
+    },
+    "title": "Pelanggan",
+    "add": "Tambah",
+    "searchPlaceholder": "Cari pelanggan...",
+    "count_zero": "{{count}} pelanggan",
+    "count_one": "{{count}} pelanggan",
+    "count_other": "{{count}} pelanggan",
+    "empty": {
+      "title": "Belum ada pelanggan",
+      "add": "Tambah Pelanggan"
+    },
+    "dialog": {
+      "addTitle": "Tambah Pelanggan",
+      "editTitle": "Edit Pelanggan",
+      "nameLabel": "Nama Pelanggan *",
+      "namePlaceholder": "Contoh: Budi Santoso",
+      "phoneLabel": "Nomor HP",
+      "phonePlaceholder": "08123456789",
+      "emailLabel": "Email",
+      "emailPlaceholder": "nama@email.com",
+      "addressLabel": "Alamat",
+      "addressPlaceholder": "Alamat pelanggan",
+      "notesLabel": "Catatan",
+      "notesPlaceholder": "Catatan tambahan",
+      "save": "Simpan"
+    },
+    "deleteDialog": {
+      "title": "Hapus Pelanggan?",
+      "description": "Data pelanggan yang dihapus tidak bisa dikembalikan. Transaksi lama tetap menyimpan nama pelanggan.",
+      "cancel": "Batal",
+      "confirm": "Hapus"
+    },
+    "viewDialog": {
+      "summary": {
+        "totalTransactions": "Total Transaksi",
+        "totalSpent": "Total Belanja",
+        "remainingDebt": "Sisa Hutang"
+      },
+      "openDebts": "Buka Daftar Hutang",
+      "historyTitle": "Riwayat Transaksi",
+      "loading": "Memuat...",
+      "empty": "Belum ada transaksi"
+    },
+    "toast": {
+      "updated": "Pelanggan diperbarui",
+      "added": "Pelanggan ditambahkan",
+      "deleted": "Pelanggan dihapus"
+    }
+  },
+  "debts": {
+    "locked": {
+      "title": "Daftar Hutang",
+      "permissionLabel": "Kelola Pelanggan"
+    },
+    "title": "Daftar Hutang",
+    "summary": {
+      "totalReceivable": "Total Piutang",
+      "activeDebts": "Hutang Aktif"
+    },
+    "searchPlaceholder": "Cari pelanggan atau nomor struk...",
+    "filters": {
+      "active": "Belum Lunas",
+      "paid": "Lunas",
+      "all": "Semua"
+    },
+    "empty": "Tidak ada data hutang",
+    "labels": {
+      "originalAmount": "Hutang Awal",
+      "paid": "Dibayar",
+      "remaining": "Sisa"
+    },
+    "recordPayment": "Catat Pembayaran",
+    "deletedMethodFallback": "Metode dihapus",
+    "detail": {
+      "title": "Detail Hutang",
+      "status": {
+        "paid": "Lunas",
+        "partial": "Sebagian",
+        "unpaid": "Belum Dibayar"
+      },
+      "viewTransaction": "Lihat transaksi",
+      "paymentHistory": "Riwayat Pembayaran",
+      "noInstallments": "Belum ada cicilan"
+    },
+    "paymentDialog": {
+      "title": "Catat Pembayaran Hutang",
+      "remainingDebt": "Sisa Hutang",
+      "amountLabel": "Nominal Pembayaran",
+      "methodLabel": "Metode Pembayaran",
+      "methodPlaceholder": "Pilih metode",
+      "notesLabel": "Keterangan",
+      "notesPlaceholder": "Contoh: cicilan pertama",
+      "saving": "Menyimpan...",
+      "save": "Simpan Pembayaran"
+    },
+    "toast": {
+      "invalidAmount": "Nominal pembayaran harus lebih dari Rp0 dan tidak melebihi sisa hutang",
+      "selectMethod": "Pilih metode pembayaran",
+      "paidOff": "Hutang berhasil dilunasi",
+      "recorded": "Pembayaran hutang dicatat",
+      "failed": "Gagal mencatat pembayaran hutang"
+    }
+  },
+  "stockIn": {
+    "locked": {
+      "title": "Stock In",
+      "permissionLabel": "Stock In / Stock Out"
+    },
+    "title": "Stock In",
+    "add": "Tambah",
+    "supplierFilter": {
+      "placeholder": "Filter Supplier",
+      "searchPlaceholder": "Cari supplier...",
+      "all": "Semua Supplier"
+    },
+    "count_zero": "{{count}} catatan",
+    "count_one": "{{count}} catatan",
+    "count_other": "{{count}} catatan",
+    "empty": "Belum ada data stock in",
+    "item": {
+      "fromSupplier": "dari {{supplier}}",
+      "quantity": "+{{qty}}",
+      "unitPrice": "@ Rp {{price}}"
+    },
+    "dialog": {
+      "title": "Tambah Stock In",
+      "productLabel": "Produk *",
+      "supplierLabel": "Supplier *",
+      "quantityLabel": "Jumlah *",
+      "quantityPlaceholder": "10",
+      "buyPriceLabel": "Harga Beli/Unit *",
+      "buyPricePlaceholder": "5000",
+      "notesLabel": "Catatan",
+      "notesPlaceholder": "Opsional",
+      "total": "Total: Rp {{amount}}",
+      "save": "Simpan Stock In"
+    },
+    "toast": {
+      "fillAll": "Lengkapi semua field",
+      "success": "Stok {{product}} bertambah {{qty}}. HPP: Rp {{hpp}}"
+    }
+  },
+  "stockOut": {
+    "locked": {
+      "title": "Stock Out",
+      "permissionLabel": "Stock In / Stock Out"
+    },
+    "title": "Stock Out",
+    "add": "Tambah",
+    "count_zero": "{{count}} catatan",
+    "count_one": "{{count}} catatan",
+    "count_other": "{{count}} catatan",
+    "empty": "Belum ada data stock out",
+    "item": {
+      "quantity": "-{{qty}}"
+    },
+    "dialog": {
+      "title": "Tambah Stock Out",
+      "productLabel": "Produk *",
+      "quantityLabel": "Jumlah *",
+      "quantityPlaceholder": "1",
+      "reasonLabel": "Alasan *",
+      "reasonPlaceholder": "Pilih",
+      "notesLabel": "Catatan",
+      "notesPlaceholder": "Opsional",
+      "stockAfter": "Stok setelah: {{stock}} {{unit}}",
+      "save": "Simpan Stock Out"
+    },
+    "reasons": {
+      "damaged": "Rusak",
+      "lost": "Hilang",
+      "expired": "Kadaluarsa",
+      "returnSupplier": "Retur ke Supplier",
+      "ownUse": "Pemakaian Sendiri",
+      "other": "Lainnya"
+    },
+    "toast": {
+      "fillAll": "Lengkapi semua field",
+      "exceedsStock": "Jumlah melebihi stok yang tersedia",
+      "success": "Stok {{product}} berkurang {{qty}}"
+    }
+  },
+  "expenses": {
+    "locked": {
+      "title": "Pengeluaran",
+      "permissionLabel": "Lihat Pengeluaran"
+    },
+    "title": "Pengeluaran",
+    "add": "Tambah",
+    "edit": "Edit",
+    "delete": "Hapus",
+    "range": {
+      "today": "Hari ini",
+      "last7": "7 hari",
+      "last30": "30 hari",
+      "thisMonth": "Bulan ini",
+      "all": "Semua"
+    },
+    "summary": {
+      "totalExpenses": "Total Pengeluaran ({{range}})",
+      "count_zero": "{{count}} catatan",
+      "count_one": "{{count}} catatan",
+      "count_other": "{{count}} catatan"
+    },
+    "categoryFilter": {
+      "placeholder": "Filter kategori",
+      "all": "Semua kategori"
+    },
+    "clearFilter": "Hapus filter",
+    "empty": {
+      "none": "Belum ada pengeluaran tercatat",
+      "filtered": "Tidak ada pengeluaran sesuai filter"
+    },
+    "dialog": {
+      "addTitle": "Tambah Pengeluaran",
+      "editTitle": "Edit Pengeluaran",
+      "missingCategories": "Belum ada kategori pengeluaran. Tambahkan dulu di Pengaturan.",
+      "missingPaymentMethods": "Belum ada metode pembayaran. Tambahkan dulu di Pengaturan.",
+      "titleLabel": "Judul *",
+      "titlePlaceholder": "Contoh: Bayar listrik bulan ini",
+      "categoryLabel": "Kategori *",
+      "categoryPlaceholder": "Pilih kategori",
+      "amountLabel": "Nominal *",
+      "amountPlaceholder": "50000",
+      "dateLabel": "Tanggal *",
+      "methodLabel": "Metode Pembayaran *",
+      "methodPlaceholder": "Pilih metode",
+      "notesLabel": "Catatan",
+      "notesPlaceholder": "Opsional",
+      "addButton": "Catat Pengeluaran",
+      "saveButton": "Simpan Perubahan"
+    },
+    "deleteDialog": {
+      "title": "Hapus pengeluaran?",
+      "description": "\"{{title}}\" sebesar {{amount}} akan dihapus. Catatan ini tidak akan masuk ke laporan.",
+      "cancel": "Batal",
+      "confirm": "Hapus"
+    },
+    "toast": {
+      "titleRequired": "Judul pengeluaran wajib diisi",
+      "categoryRequired": "Pilih kategori",
+      "amountInvalid": "Nominal harus lebih dari 0",
+      "methodRequired": "Pilih metode pembayaran",
+      "dateRequired": "Pilih tanggal",
+      "updated": "Pengeluaran diperbarui",
+      "added": "Pengeluaran dicatat",
+      "saveFailed": "Gagal menyimpan pengeluaran",
+      "deleted": "Pengeluaran dihapus"
+    }
+  },
+  "stockReport": {
+    "locked": {
+      "title": "Laporan Stok",
+      "permissionLabel": "Lihat Laporan & Profit"
+    },
+    "title": "Laporan Stok",
+    "period": {
+      "7days": "7 Hari",
+      "30days": "30 Hari"
+    },
+    "summary": {
+      "in": "Masuk",
+      "out": "Keluar",
+      "available": "Tersedia"
+    },
+    "stockInValue": {
+      "title": "Nilai Stok Masuk",
+      "totalPurchase": "Total Pembelian",
+      "average": "Rata-rata: {{avg}} per unit"
+    },
+    "movementChart": {
+      "title": "Pergerakan Stok",
+      "in": "Masuk",
+      "out": "Keluar"
+    },
+    "reasons": {
+      "title": "Alasan Stock Keluar",
+      "damaged": "Rusak",
+      "lost": "Hilang",
+      "return": "Retur",
+      "expired": "Expired",
+      "sample": "Sample",
+      "other": "Lainnya",
+      "unit": "unit"
+    },
+    "lowStock": {
+      "title": "Stok Menipis ({{count}})",
+      "more_zero": "+{{count}} produk lainnya",
+      "more_one": "+{{count}} produk lainnya",
+      "more_other": "+{{count}} produk lainnya"
+    },
+    "outOfStock": {
+      "title": "Stok Habis ({{count}})"
+    }
   }
 }
