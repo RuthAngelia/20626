@@ -22,8 +22,11 @@ import { usePWAInstall } from '@/hooks/use-pwa-install';
 import { isNativePlatform, getDefaultBluetoothPrinter, setDefaultBluetoothPrinter, listPairedBluetoothDevices, type BluetoothPrinter } from '@/lib/printer';
 import { Printer } from 'lucide-react';
 import { APP_VERSION } from '@/lib/app-version';
+import { useTranslation, Trans } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 export default function Pengaturan() {
+  const { t } = useTranslation('settings');
   const isNative = isNativePlatform();
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
   const paymentMethods = useLiveQuery(() => db.paymentMethods.toArray());
@@ -70,10 +73,10 @@ export default function Pengaturan() {
       const devices = await listPairedBluetoothDevices();
       setPairedPrinters(devices);
       if (devices.length === 0) {
-        toast.error('Belum ada perangkat Bluetooth yang dipasangkan');
+        toast.error(t('toast.noPairedDevices'));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal membaca daftar printer');
+      toast.error(err instanceof Error ? err.message : t('toast.loadPrintersFailed'));
     } finally {
       setLoadingPrinters(false);
     }
@@ -82,25 +85,25 @@ export default function Pengaturan() {
   const selectDefaultPrinter = (printer: BluetoothPrinter) => {
     setDefaultBluetoothPrinter(printer);
     setDefaultPrinter(printer);
-    toast.success(`Printer default: ${printer.name}`);
+    toast.success(t('toast.printerDefaultSet', { name: printer.name }));
   };
 
   const clearDefaultPrinter = () => {
     setDefaultBluetoothPrinter(null);
     setDefaultPrinter(null);
-    toast.success('Printer default dihapus');
+    toast.success(t('toast.printerDefaultCleared'));
   };
 
   const handleToggleAnalytics = (enabled: boolean) => {
     setAnalyticsOn(enabled);
     setAnalyticsEnabled(enabled);
-    toast.success(enabled ? 'Analitik diaktifkan' : 'Analitik dinonaktifkan');
+    toast.success(enabled ? t('privacyAnalytics.enabled') : t('privacyAnalytics.disabled'));
   };
 
   const handleToggleDebt = async (enabled: boolean) => {
     if (!storeSettings?.id) return;
     await db.storeSettings.update(storeSettings.id, { allowDebt: enabled });
-    toast.success(enabled ? 'Pembayaran hutang diizinkan' : 'Pembayaran hutang dinonaktifkan');
+    toast.success(enabled ? t('toast.debtEnabled') : t('toast.debtDisabled'));
   };
 
   // Store edit
@@ -139,7 +142,7 @@ export default function Pengaturan() {
   const saveStore = async () => {
     if (storeSettings?.id) {
       await db.storeSettings.update(storeSettings.id, { storeName: storeName.trim(), address: storeAddr.trim(), phone: storePhone.trim(), logo: storeLogo || undefined });
-      toast.success('Info toko disimpan');
+      toast.success(t('storeDialog.saveSuccess'));
       setStoreDialog(false);
     }
   };
@@ -148,14 +151,14 @@ export default function Pengaturan() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      toast.error('File harus berupa gambar');
+      toast.error(t('toast.invalidImage'));
       return;
     }
     try {
       const compressed = await compressImage(file);
       setStoreLogo(compressed);
     } catch {
-      toast.error('Gagal memproses gambar');
+      toast.error(t('toast.processImageFailed'));
     }
     if (logoInputRef.current) logoInputRef.current.value = '';
   };
@@ -172,17 +175,17 @@ export default function Pengaturan() {
 
   const handleActivateMultiUser = async () => {
     if (!storeSettings?.id) return;
-    if (!actName.trim()) { toast.error('Nama pemilik wajib diisi'); return; }
+    if (!actName.trim()) { toast.error(t('toast.nameRequired')); return; }
     if (!isValidUsername(actUsername)) {
-      toast.error('Username 3-20 karakter, hanya huruf/angka/underscore');
+      toast.error(t('toast.usernameInvalid'));
       return;
     }
     if (!isValidPin(actPin)) {
-      toast.error('PIN harus 4-6 digit angka');
+      toast.error(t('toast.pinInvalid'));
       return;
     }
     if (actPin !== actPinConfirm) {
-      toast.error('Konfirmasi PIN tidak cocok');
+      toast.error(t('toast.pinMismatch'));
       return;
     }
 
@@ -201,7 +204,7 @@ export default function Pengaturan() {
           permissions: [],
         });
         if (!result.ok) {
-          toast.error(result.error || 'Gagal membuat akun pemilik');
+          toast.error(result.error || t('toast.createOwnerFailed'));
           return;
         }
         ownerId = result.userId;
@@ -215,7 +218,7 @@ export default function Pengaturan() {
         saveSession(ownerId, storeSettings.deviceId);
       }
 
-      toast.success('Multi-user aktif. Anda login sebagai pemilik.');
+      toast.success(t('toast.multiUserEnabled'));
       setActivateOpen(false);
       // Reload so AuthProvider picks up the new session + flag from a clean state.
       window.location.reload();
@@ -228,7 +231,7 @@ export default function Pengaturan() {
     if (!storeSettings?.id) return;
     await db.storeSettings.update(storeSettings.id, { multiUserEnabled: false });
     setDisableOpen(false);
-    toast.success('Multi-user dinonaktifkan');
+    toast.success(t('toast.multiUserDisabled'));
     // Force reload so AuthProvider re-evaluates state.
     window.location.reload();
   };
@@ -255,38 +258,38 @@ export default function Pengaturan() {
         theme: 'bg-destructive/10 ring-destructive/20',
         iconWrap: 'bg-destructive/15 text-destructive',
         badge: 'bg-destructive text-white',
-        badgeText: 'BELUM AKTIF',
-        desc: 'Aktifkan Cloud Sync untuk memantau laporan toko secara real-time di dashboard.freekasir.com — buka dari HP atau laptop mana saja, data aman walau perangkat hilang atau ganti.',
+        badgeText: t('cloudSync.status.inactive'),
+        desc: t('cloudSync.desc.inactive'),
       }
     : !cloudStoreLinked
     ? {
         theme: 'bg-warning/10 ring-warning/20',
         iconWrap: 'bg-warning/15 text-warning',
         badge: 'bg-warning text-white',
-        badgeText: 'PILIH TOKO',
-        desc: 'Langganan aktif, tapi perangkat belum terhubung ke toko. Pilih toko agar data bisa disinkronkan.',
+        badgeText: t('cloudSync.status.selectStore'),
+        desc: t('cloudSync.desc.selectStore'),
       }
     : !cloudAutoOn
     ? {
         theme: 'bg-warning/10 ring-warning/20',
         iconWrap: 'bg-warning/15 text-warning',
         badge: 'bg-warning text-white',
-        badgeText: 'PERLU DIATUR',
-        desc: 'Toko sudah terhubung, tapi sinkronisasi otomatis belum dinyalakan. Atur jadwalnya agar data tersinkron rutin.',
+        badgeText: t('cloudSync.status.needsSetup'),
+        desc: t('cloudSync.desc.needsSetup'),
       }
     : {
         theme: 'bg-success/10 ring-success/20',
         iconWrap: 'bg-success/15 text-success',
         badge: 'bg-success text-white',
-        badgeText: 'AKTIF',
-        desc: 'Sinkronisasi aktif. Pantau laporan toko real-time di dashboard.freekasir.com dari perangkat mana saja.',
+        badgeText: t('cloudSync.status.active'),
+        desc: t('cloudSync.desc.active'),
       };
 
   return (
     <div className="px-4 pt-6 pb-4 space-y-5">
       <h1 className="text-xl font-bold flex items-center gap-2">
         <Settings className="w-5 h-5 text-primary" />
-        Pengaturan
+        {t('common:setting')}
       </h1>
 
       {/* Store Info */}
@@ -297,14 +300,14 @@ export default function Pengaturan() {
         <CardContent className="p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden shrink-0">
             {storeSettings?.logo ? (
-              <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-cover" />
+              <img src={storeSettings.logo} alt={t('storeDialog.logoPreviewAlt')} className="w-full h-full object-cover" />
             ) : (
               <Store className="w-5 h-5" />
             )}
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold">{storeSettings?.storeName || 'Toko Saya'}</p>
-            <p className="text-xs text-muted-foreground">{storeSettings?.address || 'Belum diatur'}</p>
+            <p className="text-sm font-semibold">{storeSettings?.storeName || t('storeFallback')}</p>
+            <p className="text-xs text-muted-foreground">{storeSettings?.address || t('notSet')}</p>
           </div>
           {can('manage_store_settings') && <Edit2 className="w-4 h-4 text-muted-foreground" />}
         </CardContent>
@@ -320,7 +323,7 @@ export default function Pengaturan() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-bold">Cloud Sync</p>
+                  <p className="text-sm font-bold">{t('cloudSync.title')}</p>
                   <span className={`text-[9px] font-semibold uppercase tracking-wide rounded px-1.5 py-0.5 ${cloudStatus.badge}`}>
                     {cloudStatus.badgeText}
                   </span>
@@ -331,8 +334,8 @@ export default function Pengaturan() {
                 {cloudLoggedIn && cloudSubscribed && (
                   <p className="text-[10px] text-muted-foreground/80 mt-1">
                     {storeSettings?.lastCloudBackupAt
-                      ? `Terakhir sync: ${new Date(storeSettings.lastCloudBackupAt).toLocaleString('id-ID')}`
-                      : 'Belum pernah disinkronkan'}
+                      ? t('cloudSync.lastSync', { time: new Date(storeSettings.lastCloudBackupAt).toLocaleString('id-ID') })
+                      : t('cloudSync.neverSynced')}
                   </p>
                 )}
               </div>
@@ -350,10 +353,8 @@ export default function Pengaturan() {
               <Smartphone className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">Install sebagai Aplikasi</p>
-              <p className="text-[10px] text-muted-foreground">
-                Buka langsung dari home screen, tanpa browser
-              </p>
+              <p className="text-sm font-semibold">{t('installApp.title')}</p>
+              <p className="text-[10px] text-muted-foreground">{t('installApp.hint')}</p>
             </div>
             {canInstall ? (
               <Button
@@ -361,11 +362,11 @@ export default function Pengaturan() {
                 className="h-8 text-xs"
                 onClick={async () => {
                   const ok = await install();
-                  if (ok) toast.success('Berhasil install FreeKasir!');
+                  if (ok) toast.success(t('installApp.installSuccess'));
                 }}
               >
                 <Download className="w-3.5 h-3.5 mr-1" />
-                Install
+                {t('installApp.installButton')}
               </Button>
             ) : (
               <Button
@@ -374,7 +375,7 @@ export default function Pengaturan() {
                 className="h-8 text-xs"
                 onClick={() => setInstallHelpOpen(true)}
               >
-                Cara Install
+                {t('installApp.helpButton')}
               </Button>
             )}
           </CardContent>
@@ -391,12 +392,12 @@ export default function Pengaturan() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate">{currentUser.name}</p>
               <p className="text-[10px] text-muted-foreground">
-                @{currentUser.username} · {currentUser.role === 'owner' ? 'Pemilik' : 'Karyawan'}
+                @{currentUser.username} · {currentUser.role === 'owner' ? t('employees.owner') : t('employees.staff')}
               </p>
             </div>
             <Button variant="ghost" size="sm" className="h-8 text-xs gap-1 text-destructive" onClick={() => setLogoutOpen(true)}>
               <LogOut className="w-3.5 h-3.5" />
-              Keluar
+              {t('employees.logout')}
             </Button>
           </CardContent>
         </Card>
@@ -405,7 +406,7 @@ export default function Pengaturan() {
       {/* Karyawan & Akses links/activation */}
       {isOwner && (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted-foreground">Karyawan & Akses</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground">{t('employees.sectionTitle')}</h2>
           {!multiUserEnabled ? (
             <Card className="border-0 shadow-sm">
               <CardContent className="p-3 flex items-center gap-3">
@@ -413,13 +414,11 @@ export default function Pengaturan() {
                   <UsersIcon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">Aktifkan Multi-User</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Buat akun karyawan dengan akses terbatas. Data Anda tetap aman.
-                  </p>
+                  <p className="text-sm font-semibold">{t('employees.activate.title')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t('employees.activate.description')}</p>
                 </div>
                 <Button size="sm" className="h-8 text-xs" onClick={openActivateDialog}>
-                  Aktifkan
+                  {t('employees.activate.button')}
                 </Button>
               </CardContent>
             </Card>
@@ -430,8 +429,8 @@ export default function Pengaturan() {
                   <CardContent className="p-3 flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><UsersIcon className="w-4 h-4" /></div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold">Kelola Karyawan</p>
-                      <p className="text-[10px] text-muted-foreground">{usersCount ?? 0} akun terdaftar · atur akses per karyawan</p>
+                      <p className="text-sm font-semibold">{t('employees.manage.title')}</p>
+                      <p className="text-[10px] text-muted-foreground">{t('employees.manage.description', { count: usersCount ?? 0 })}</p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </CardContent>
@@ -443,11 +442,11 @@ export default function Pengaturan() {
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold">Multi-User Aktif</p>
-                    <p className="text-[10px] text-muted-foreground">Karyawan harus login untuk akses kasir</p>
+                    <p className="text-sm font-semibold">{t('employees.active.title')}</p>
+                    <p className="text-[10px] text-muted-foreground">{t('employees.active.description')}</p>
                   </div>
                   <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive" onClick={() => setDisableOpen(true)}>
-                    Nonaktifkan
+                    {t('employees.active.disable')}
                   </Button>
                 </CardContent>
               </Card>
@@ -458,12 +457,12 @@ export default function Pengaturan() {
 
       {/* Transaksi & Stok */}
       <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-muted-foreground">Transaksi & Stok</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">{t('transactionsAndStock.sectionTitle')}</h2>
         <Link to="/history">
           <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Receipt className="w-4 h-4" /></div>
-              <div className="flex-1"><p className="text-sm font-semibold">Riwayat Transaksi</p><p className="text-[10px] text-muted-foreground">Lihat semua transaksi & cetak ulang struk</p></div>
+              <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.transactionHistory.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.transactionHistory.description')}</p></div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </CardContent>
           </Card>
@@ -473,7 +472,7 @@ export default function Pengaturan() {
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><Truck className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">Supplier</p><p className="text-[10px] text-muted-foreground">Kelola data supplier</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.supplier.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.supplier.description')}</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>
@@ -484,7 +483,7 @@ export default function Pengaturan() {
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><UsersIcon className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">Pelanggan</p><p className="text-[10px] text-muted-foreground">Kelola data pelanggan</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.customers.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.customers.description')}</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>
@@ -496,8 +495,8 @@ export default function Pengaturan() {
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><HandCoins className="w-4 h-4" /></div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold">Daftar Hutang</p>
-                  <p className="text-[10px] text-muted-foreground">{activeDebts?.length ?? 0} hutang belum lunas</p>
+                  <p className="text-sm font-semibold">{t('transactionsAndStock.debts.title')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.debts.description', { count: activeDebts?.length ?? 0 })}</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
@@ -510,7 +509,7 @@ export default function Pengaturan() {
               <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
                 <CardContent className="p-3 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-success/10 text-success flex items-center justify-center"><ArrowDownToLine className="w-4 h-4" /></div>
-                  <div className="flex-1"><p className="text-sm font-semibold">Stock In</p><p className="text-[10px] text-muted-foreground">Catat barang masuk & HPP otomatis</p></div>
+                  <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.stockIn.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.stockIn.description')}</p></div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </CardContent>
               </Card>
@@ -519,7 +518,7 @@ export default function Pengaturan() {
               <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
                 <CardContent className="p-3 flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center"><ArrowUpFromLine className="w-4 h-4" /></div>
-                  <div className="flex-1"><p className="text-sm font-semibold">Stock Out</p><p className="text-[10px] text-muted-foreground">Catat barang keluar non-penjualan</p></div>
+                  <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.stockOut.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.stockOut.description')}</p></div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </CardContent>
               </Card>
@@ -531,7 +530,7 @@ export default function Pengaturan() {
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">Pengeluaran</p><p className="text-[10px] text-muted-foreground">Catat biaya operasional non-stok (listrik, gaji, sewa, dll)</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.expenses.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.expenses.description')}</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>
@@ -542,7 +541,7 @@ export default function Pengaturan() {
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Package className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">Laporan Stok</p><p className="text-[10px] text-muted-foreground">Lihat pergerakan stok per periode</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold">{t('transactionsAndStock.stockReport.title')}</p><p className="text-[10px] text-muted-foreground">{t('transactionsAndStock.stockReport.description')}</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>
@@ -552,15 +551,15 @@ export default function Pengaturan() {
 
       {/* Master Data & Preferensi */}
       <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-muted-foreground">Master Data & Preferensi</h2>
+        <h2 className="text-sm font-semibold text-muted-foreground">{t('masterData.sectionTitle')}</h2>
 
         {can('manage_store_settings') && (
           <Card className="border-0 shadow-sm mb-2">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><HandCoins className="w-4 h-4" /></div>
               <div className="flex-1">
-                <p className="text-sm font-semibold">Izinkan Hutang</p>
-                <p className="text-[10px] text-muted-foreground">Kasir dapat menerima pembayaran sebagian atau penuh sebagai hutang</p>
+                <p className="text-sm font-semibold">{t('masterData.allowDebt.title')}</p>
+                <p className="text-[10px] text-muted-foreground">{t('masterData.allowDebt.description')}</p>
               </div>
               <Switch checked={storeSettings?.allowDebt ?? false} onCheckedChange={handleToggleDebt} />
             </CardContent>
@@ -572,7 +571,7 @@ export default function Pengaturan() {
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><CreditCard className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">Metode Pembayaran</p><p className="text-[10px] text-muted-foreground">{paymentMethods?.length ?? 0} metode · tunai, transfer, e-wallet, qris</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.paymentMethods.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.paymentMethods.description', { count: paymentMethods?.length ?? 0 })}</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>
@@ -584,7 +583,7 @@ export default function Pengaturan() {
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><Tag className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">Kategori Produk</p><p className="text-[10px] text-muted-foreground">{categories?.length ?? 0} kategori</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.productCategory.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.productCategory.description', { count: categories?.length ?? 0 })}</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>
@@ -596,7 +595,7 @@ export default function Pengaturan() {
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-warning/10 text-warning flex items-center justify-center"><Wallet className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">Kategori Pengeluaran</p><p className="text-[10px] text-muted-foreground">{expenseCategories?.length ?? 0} kategori</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.expenseCategory.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.expenseCategory.description', { count: expenseCategories?.length ?? 0 })}</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>
@@ -607,7 +606,7 @@ export default function Pengaturan() {
           <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
             <CardContent className="p-3 flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><Ruler className="w-4 h-4" /></div>
-              <div className="flex-1"><p className="text-sm font-semibold">Satuan</p><p className="text-[10px] text-muted-foreground">{units?.length ?? 0} satuan · pcs, kg, porsi, dll</p></div>
+              <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.units.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.units.description', { count: units?.length ?? 0 })}</p></div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </CardContent>
           </Card>
@@ -618,7 +617,7 @@ export default function Pengaturan() {
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow mb-2">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-accent/10 text-accent flex items-center justify-center"><Palette className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">Warna Tema</p><p className="text-[10px] text-muted-foreground">Sesuaikan warna aksen aplikasi</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.theme.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.theme.description')}</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>
@@ -630,7 +629,7 @@ export default function Pengaturan() {
             <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-success/10 text-success flex items-center justify-center"><Download className="w-4 h-4" /></div>
-                <div className="flex-1"><p className="text-sm font-semibold">Backup & Restore</p><p className="text-[10px] text-muted-foreground">Export / import data toko (JSON)</p></div>
+                <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.backup.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.backup.description')}</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>
@@ -642,11 +641,11 @@ export default function Pengaturan() {
       {isNative && can('manage_store_settings') && (
       <Card className="border-0 shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-1.5"><Printer className="w-4 h-4" /> Printer Bluetooth</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-1.5"><Printer className="w-4 h-4" /> {t('bluetoothPrinter.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="rounded-lg bg-muted/60 p-3">
-            <p className="text-[11px] text-muted-foreground mb-1">Printer Default</p>
+            <p className="text-[11px] text-muted-foreground mb-1">{t('bluetoothPrinter.default')}</p>
             {defaultPrinter ? (
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
@@ -658,17 +657,17 @@ export default function Pengaturan() {
                 </Button>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Belum dipilih — struk akan dicetak ke printer terpasang pertama yang ditemukan.</p>
+              <p className="text-sm text-muted-foreground">{t('bluetoothPrinter.notSelected')}</p>
             )}
           </div>
 
           <Button variant="outline" className="w-full h-10 text-sm gap-2" onClick={refreshPairedPrinters} disabled={loadingPrinters}>
-            <Printer className="w-4 h-4" /> {loadingPrinters ? 'Mencari...' : 'Cari Printer Terpasang'}
+            <Printer className="w-4 h-4" /> {loadingPrinters ? t('bluetoothPrinter.searching') : t('bluetoothPrinter.search')}
           </Button>
 
           {pairedPrinters.length > 0 && (
             <div className="space-y-1">
-              <p className="text-[11px] text-muted-foreground">Pilih printer:</p>
+              <p className="text-[11px] text-muted-foreground">{t('bluetoothPrinter.selectPrinter')}</p>
               {pairedPrinters.map(printer => {
                 const isSelected = defaultPrinter?.address === printer.address;
                 return (
@@ -679,7 +678,7 @@ export default function Pengaturan() {
                     className={`flex items-center justify-between w-full text-left rounded-lg border px-3 py-2 transition-colors ${isSelected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{printer.name || 'Tanpa Nama'}</p>
+                      <p className="text-sm font-medium truncate">{printer.name || t('bluetoothPrinter.unnamed')}</p>
                       <p className="text-[10px] text-muted-foreground truncate">{printer.address}</p>
                     </div>
                     {isSelected && <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />}
@@ -689,7 +688,7 @@ export default function Pengaturan() {
             </div>
           )}
           <p className="text-[10px] text-muted-foreground leading-snug">
-            Pastikan printer sudah dipasangkan (paired) lewat Pengaturan Bluetooth Android terlebih dahulu.
+            {t('bluetoothPrinter.hint')}
           </p>
         </CardContent>
       </Card>
@@ -698,14 +697,14 @@ export default function Pengaturan() {
       {/* Privasi & Analitik */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-1.5"><LineChart className="w-4 h-4" /> Privasi & Analitik</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-1.5"><LineChart className="w-4 h-4" /> {t('privacyAnalytics.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between gap-3">
             <div className="space-y-0.5 pr-3">
-              <Label className="text-sm">Bantu Kami dengan Data Anonim</Label>
+              <Label className="text-sm">{t('privacyAnalytics.label')}</Label>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                Mengirim statistik penggunaan anonim (halaman yang dibuka & aksi seperti buat produk/transaksi) untuk membantu pengembangan. Data bisnis seperti nama produk, harga, dan nominal transaksi tidak pernah dikirim.
+                {t('privacyAnalytics.description')}
               </p>
             </div>
             <Switch checked={analyticsOn} onCheckedChange={handleToggleAnalytics} />
@@ -713,12 +712,22 @@ export default function Pengaturan() {
         </CardContent>
       </Card>
 
+      {/* Bahasa */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-1.5"><Globe className="w-4 h-4" /> {t('language.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LanguageSwitcher />
+        </CardContent>
+      </Card>
+
       {/* About */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4 text-center space-y-2">
-           <p className="text-sm font-bold">FreeKasir</p>
-           <p className="text-xs text-muted-foreground">POS Gratis untuk UMKM Indonesia 🇮🇩</p>
-           <p className="text-[10px] text-muted-foreground">v{APP_VERSION} • Data tersimpan di perangkat</p>
+           <p className="text-sm font-bold">{t('about.appName')}</p>
+           <p className="text-xs text-muted-foreground">{t('about.tagline')}</p>
+           <p className="text-[10px] text-muted-foreground">{t('about.version', { version: APP_VERSION })}</p>
 
            {/* Links */}
            <div className="flex flex-col gap-2 pt-2">
@@ -728,7 +737,7 @@ export default function Pengaturan() {
                className="flex items-center justify-center gap-2 w-full h-9 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
              >
                <Sparkles className="w-3.5 h-3.5" />
-               Yang Baru di FreeKasir
+               {t('about.whatsNew')}
                {unseenFeatures.length > 0 && (
                  <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
                    {unseenFeatures.length}
@@ -741,7 +750,7 @@ export default function Pengaturan() {
                rel="noopener noreferrer"
                className="flex items-center justify-center gap-2 w-full h-9 rounded-lg border border-border bg-muted/50 text-xs font-semibold text-foreground hover:bg-primary/5 hover:border-primary/30 hover:text-primary transition-colors"
              >
-               💡 Request Fitur
+               {t('about.requestFeature')}
              </a>
              <a
                href="https://traktir.jipraks.com"
@@ -749,7 +758,7 @@ export default function Pengaturan() {
                rel="noopener noreferrer"
                className="flex items-center justify-center gap-2 w-full h-9 rounded-lg border border-warning/30 bg-warning/5 text-xs font-semibold text-warning hover:bg-warning/10 transition-colors"
              >
-               ☕ Traktir Kopi untuk Developer
+               {t('about.donate')}
              </a>
              <a
                href="https://t.me/kasirgratisan"
@@ -757,14 +766,14 @@ export default function Pengaturan() {
                rel="noopener noreferrer"
                className="flex items-center justify-center gap-2 w-full h-9 rounded-lg border border-sky-500/30 bg-sky-500/5 text-xs font-semibold text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 transition-colors"
              >
-               💬 Gabung Grup Telegram
+               {t('about.telegram')}
              </a>
            </div>
            {storageUsage && (
              <div className="pt-2 border-t">
                <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mb-1.5">
                  <HardDrive className="w-3.5 h-3.5" />
-                 <span>Penyimpanan Terpakai</span>
+                 <span>{t('about.storageUsed')}</span>
                </div>
                <p className="text-xs font-semibold">
                  {formatBytes(storageUsage.usage)} / {formatBytes(storageUsage.quota)}
@@ -786,10 +795,10 @@ export default function Pengaturan() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Smartphone className="w-5 h-5 text-primary" />
-              Cara Install Aplikasi
+              {t('installHelp.title')}
             </DialogTitle>
             <DialogDescription>
-              Browser kamu belum menampilkan tombol install otomatis. Ikuti langkah berikut sesuai perangkat.
+              {t('installHelp.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
@@ -798,19 +807,19 @@ export default function Pengaturan() {
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-bold">1</div>
                   <p className="text-sm flex-1">
-                    Buka aplikasi ini di browser <strong>Safari</strong> (bukan Chrome).
+                    <Trans i18nKey="settings:installHelp.iosStep1" components={{ strong: <strong /> }} />
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-bold">2</div>
                   <p className="text-sm flex-1">
-                    Ketuk tombol <Share2 className="w-3.5 h-3.5 inline mx-0.5" /> <strong>Share</strong> di bawah layar.
+                    <Trans i18nKey="settings:installHelp.iosStep2" components={{ strong: <strong />, 0: <Share2 className="w-3.5 h-3.5 inline mx-0.5" /> }} />
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-bold">3</div>
                   <p className="text-sm flex-1">
-                    Pilih <strong>"Add to Home Screen"</strong>, lalu ketuk <strong>Add</strong>.
+                    <Trans i18nKey="settings:installHelp.iosStep3" components={{ strong: <strong /> }} />
                   </p>
                 </div>
               </div>
@@ -819,32 +828,30 @@ export default function Pengaturan() {
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-bold">1</div>
                   <p className="text-sm flex-1">
-                    Buka aplikasi ini di browser <strong>Chrome</strong> atau <strong>Edge</strong>.
+                    <Trans i18nKey="settings:installHelp.androidStep1" components={{ strong: <strong /> }} />
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-bold">2</div>
                   <p className="text-sm flex-1">
-                    Ketuk menu <strong>(⋮)</strong> di pojok kanan atas browser.
+                    <Trans i18nKey="settings:installHelp.androidStep2" components={{ strong: <strong /> }} />
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-bold">3</div>
                   <p className="text-sm flex-1">
-                    Pilih <strong>"Install app"</strong> atau <strong>"Add to Home screen"</strong>.
+                    <Trans i18nKey="settings:installHelp.androidStep3" components={{ strong: <strong /> }} />
                   </p>
                 </div>
                 <div className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground flex items-start gap-2">
                   <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  <span>
-                    Kalau opsi tidak muncul, refresh halaman dulu lalu coba lagi. Beberapa browser butuh kunjungan kedua sebelum menawarkan install.
-                  </span>
+                  <span>{t('installHelp.troubleshoot')}</span>
                 </div>
               </div>
             )}
           </div>
           <Button className="w-full mt-2" variant="outline" onClick={() => setInstallHelpOpen(false)}>
-            Tutup
+            {t('common:close')}
           </Button>
         </DialogContent>
       </Dialog>
@@ -852,18 +859,18 @@ export default function Pengaturan() {
       {/* Store Dialog */}
       <Dialog open={storeDialog} onOpenChange={setStoreDialog}>
         <DialogContent className="max-w-[95vw] rounded-xl">
-          <DialogHeader><DialogTitle>Info Toko</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t('storeDialog.title')}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             {/* Logo picker */}
             <div className="space-y-1.5">
-              <Label>Logo Toko</Label>
+              <Label>{t('storeDialog.logoLabel')}</Label>
               <div className="flex items-center gap-3">
                 <div
                   className="w-20 h-20 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
                   onClick={() => logoInputRef.current?.click()}
                 >
                   {storeLogo ? (
-                    <img src={storeLogo} alt="Logo" className="w-full h-full object-cover" />
+                    <img src={storeLogo} alt={t('storeDialog.logoPreviewAlt')} className="w-full h-full object-cover" />
                   ) : (
                     <Camera className="w-6 h-6 text-muted-foreground/50" />
                   )}
@@ -877,7 +884,7 @@ export default function Pengaturan() {
                     onClick={() => logoInputRef.current?.click()}
                   >
                     <Camera className="w-3.5 h-3.5" />
-                    {storeLogo ? 'Ganti Logo' : 'Pilih Logo'}
+                    {storeLogo ? t('storeDialog.logoChange') : t('storeDialog.logoSelect')}
                   </Button>
                   {storeLogo && (
                     <Button
@@ -888,7 +895,7 @@ export default function Pengaturan() {
                       onClick={() => setStoreLogo(undefined)}
                     >
                       <X className="w-3.5 h-3.5" />
-                      Hapus Logo
+                      {t('storeDialog.logoRemove')}
                     </Button>
                   )}
                 </div>
@@ -901,10 +908,10 @@ export default function Pengaturan() {
                 />
               </div>
             </div>
-            <div className="space-y-1.5"><Label>Nama Toko</Label><Input value={storeName} onChange={e => setStoreName(e.target.value)} className="h-11" /></div>
-            <div className="space-y-1.5"><Label>Alamat</Label><Input value={storeAddr} onChange={e => setStoreAddr(e.target.value)} className="h-11" /></div>
-            <div className="space-y-1.5"><Label>Telepon</Label><Input value={storePhone} onChange={e => setStorePhone(e.target.value)} className="h-11" type="tel" /></div>
-            <Button className="w-full h-11" onClick={saveStore}>Simpan</Button>
+            <div className="space-y-1.5"><Label>{t('storeDialog.storeName')}</Label><Input value={storeName} onChange={e => setStoreName(e.target.value)} className="h-11" /></div>
+            <div className="space-y-1.5"><Label>{t('storeDialog.address')}</Label><Input value={storeAddr} onChange={e => setStoreAddr(e.target.value)} className="h-11" /></div>
+            <div className="space-y-1.5"><Label>{t('storeDialog.phone')}</Label><Input value={storePhone} onChange={e => setStorePhone(e.target.value)} className="h-11" type="tel" /></div>
+            <Button className="w-full h-11" onClick={saveStore}>{t('common:save')}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -913,32 +920,31 @@ export default function Pengaturan() {
       <Dialog open={activateOpen} onOpenChange={setActivateOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Aktifkan Multi-User</DialogTitle>
+            <DialogTitle>{t('employees.activateDialog.title')}</DialogTitle>
             <DialogDescription className="text-xs">
-              Buat akun pemilik. Setelah aktif, Anda harus login dengan username & PIN ini setiap kali buka aplikasi.
-              Data toko Anda tetap utuh.
+              {t('employees.activateDialog.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label>Nama Anda *</Label>
-              <Input value={actName} onChange={e => setActName(e.target.value)} placeholder="Contoh: Pak Budi" className="h-11" />
+              <Label>{t('employees.activateDialog.nameLabel')} *</Label>
+              <Input value={actName} onChange={e => setActName(e.target.value)} placeholder={t('employees.activateDialog.namePlaceholder')} className="h-11" />
             </div>
             <div className="space-y-1.5">
-              <Label>Username *</Label>
+              <Label>{t('employees.activateDialog.usernameLabel')} *</Label>
               <Input
                 value={actUsername}
                 onChange={e => setActUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))}
-                placeholder="Contoh: owner"
+                placeholder={t('employees.activateDialog.usernamePlaceholder')}
                 className="h-11 font-mono"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
               />
-              <p className="text-[10px] text-muted-foreground">3-20 karakter, huruf/angka/underscore. Tidak bisa diubah.</p>
+              <p className="text-[10px] text-muted-foreground">{t('employees.activateDialog.usernameHint')}</p>
             </div>
             <div className="space-y-1.5">
-              <Label>PIN *</Label>
+              <Label>{t('employees.activateDialog.pinLabel')} *</Label>
               <Input
                 type="password"
                 inputMode="numeric"
@@ -946,12 +952,12 @@ export default function Pengaturan() {
                 maxLength={6}
                 value={actPin}
                 onChange={e => setActPin(e.target.value.replace(/\D/g, ''))}
-                placeholder="4-6 digit angka"
+                placeholder={t('employees.activateDialog.pinPlaceholder')}
                 className="h-11 font-mono text-center tracking-widest"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Konfirmasi PIN *</Label>
+              <Label>{t('employees.activateDialog.pinConfirmLabel')} *</Label>
               <Input
                 type="password"
                 inputMode="numeric"
@@ -959,19 +965,18 @@ export default function Pengaturan() {
                 maxLength={6}
                 value={actPinConfirm}
                 onChange={e => setActPinConfirm(e.target.value.replace(/\D/g, ''))}
-                placeholder="Ketik ulang PIN"
+                placeholder={t('employees.activateDialog.pinConfirmPlaceholder')}
                 className="h-11 font-mono text-center tracking-widest"
               />
             </div>
             <div className="bg-warning/10 border border-warning/30 rounded-xl p-3 text-xs text-foreground">
-              <p className="font-semibold mb-1">Penting:</p>
+              <p className="font-semibold mb-1">{t('employees.activateDialog.warningTitle')}</p>
               <p className="text-muted-foreground">
-                Catat username & PIN dengan baik. Jika lupa, satu-satunya cara untuk reset adalah dengan menghapus
-                data aplikasi (data toko juga terhapus). Pastikan Anda sudah backup.
+                {t('employees.activateDialog.warningText')}
               </p>
             </div>
             <Button className="w-full h-11" onClick={handleActivateMultiUser} disabled={activating}>
-              {activating ? 'Mengaktifkan…' : 'Aktifkan Multi-User'}
+              {activating ? t('employees.activateDialog.submitting') : t('employees.activateDialog.submit')}
             </Button>
           </div>
         </DialogContent>
@@ -981,16 +986,15 @@ export default function Pengaturan() {
       <AlertDialog open={disableOpen} onOpenChange={setDisableOpen}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Nonaktifkan Multi-User?</AlertDialogTitle>
+            <AlertDialogTitle>{t('employees.disableDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Aplikasi akan kembali ke mode tanpa login. Akun karyawan tetap tersimpan dan akan aktif kembali
-              jika multi-user diaktifkan lagi. Data transaksi tetap utuh.
+              {t('employees.disableDialog.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDisableMultiUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Nonaktifkan
+              {t('employees.disableDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1000,15 +1004,15 @@ export default function Pengaturan() {
       <AlertDialog open={logoutOpen} onOpenChange={setLogoutOpen}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Keluar dari Akun?</AlertDialogTitle>
+            <AlertDialogTitle>{t('employees.logoutDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Anda akan diarahkan ke halaman login. Pastikan tidak ada open bill yang belum disimpan.
+              {t('employees.logoutDialog.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel>{t('common:cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleLogout} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Keluar
+              {t('employees.logoutDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

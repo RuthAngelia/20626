@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { X, Camera, CameraOff, Flashlight, AlertCircle, ExternalLink } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
@@ -49,6 +50,7 @@ function isStandalonePWA(): boolean {
 }
 
 export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
+  const { t } = useTranslation('products');
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scanningRef = useRef(false);
   const [hasFlash, setHasFlash] = useState(false);
@@ -69,9 +71,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
       if (typeof window !== 'undefined' && !window.isSecureContext) {
         if (cancelled) return;
         setPermission('denied');
-        setErrorState(
-          'Aplikasi harus diakses melalui HTTPS untuk mengakses kamera.',
-        );
+        setErrorState(t('barcodeScanner.httpsRequired'));
         return;
       }
 
@@ -79,9 +79,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         if (cancelled) return;
         setPermission('unsupported');
-        setErrorState(
-          'Browser tidak mendukung akses kamera. Coba update aplikasi atau gunakan browser lain.',
-        );
+        setErrorState(t('barcodeScanner.browserUnsupported'));
         return;
       }
 
@@ -96,8 +94,8 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
             setPermission('denied');
             setErrorState(
               isStandalonePWA()
-                ? 'Izin kamera ditolak. Buka Settings perangkat > Apps > FreeKasir > Permissions, lalu aktifkan Camera.'
-                : 'Izin kamera ditolak. Klik ikon gembok di address bar dan izinkan akses kamera.',
+                ? t('barcodeScanner.permissionDeniedNative')
+                : t('barcodeScanner.permissionDeniedWeb'),
             );
             return;
           }
@@ -215,30 +213,30 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
         case 'NotAllowedError':
           setErrorState(
             isStandalonePWA()
-              ? 'Izin kamera ditolak. Buka Settings perangkat > Apps > FreeKasir > Permissions, lalu aktifkan Camera.'
-              : 'Izin kamera ditolak. Mohon izinkan akses kamera lalu coba lagi.',
+              ? t('barcodeScanner.permissionDeniedNative')
+              : t('barcodeScanner.permissionDeniedGeneric'),
           );
           break;
         case 'NotFoundError':
-          setErrorState('Kamera tidak ditemukan di perangkat ini.');
+          setErrorState(t('barcodeScanner.noCamera'));
           break;
         case 'NotReadableError':
-          setErrorState('Kamera sedang digunakan aplikasi lain. Tutup aplikasi lain lalu coba lagi.');
+          setErrorState(t('barcodeScanner.cameraInUse'));
           break;
         case 'OverconstrainedError':
-          setErrorState('Kamera tidak mendukung konfigurasi yang diminta.');
+          setErrorState(t('barcodeScanner.cameraConfigUnsupported'));
           break;
         case 'SecurityError':
-          setErrorState('Akses kamera diblokir karena alasan keamanan. Pastikan aplikasi diakses via HTTPS.');
+          setErrorState(t('barcodeScanner.securityBlocked'));
           break;
         default:
-          setErrorState(`Gagal mengakses kamera (${name}).`);
+          setErrorState(t('barcodeScanner.accessFailed', { name }));
       }
     };
 
     const handleStartError = (name: string) => {
       setPermission('denied');
-      setErrorState(`Gagal memulai scanner (${name}). Coba tutup dan buka kembali.`);
+      setErrorState(t('barcodeScanner.startFailed', { name }));
     };
 
     void startScanner();
@@ -274,7 +272,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
         setFlashOn(!flashOn);
       }
     } catch {
-      toast.error('Flash tidak didukung di perangkat ini');
+      toast.error(t('barcodeScanner.flashUnsupported'));
     }
   };
 
@@ -291,7 +289,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
         <DialogHeader className="p-4 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <Camera className="w-5 h-5" />
-            Scan Barcode
+            {t('barcodeScanner.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -300,11 +298,11 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
             <div className="w-full aspect-[4/3] bg-muted rounded-lg flex flex-col items-center justify-center p-6 text-center gap-3">
               <AlertCircle className="w-12 h-12 text-destructive" />
               <p className="text-sm text-foreground font-medium">
-                {errorState ?? 'Gagal memulai kamera.'}
+                {errorState ?? t('barcodeScanner.cameraError')}
               </p>
               {isStandalonePWA() && permission === 'denied' && (
                 <p className="text-xs text-muted-foreground">
-                  Tip: Setelah mengubah izin di Settings, buka kembali aplikasi.
+                  {t('barcodeScanner.permissionTip')}
                 </p>
               )}
             </div>
@@ -313,7 +311,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
               <div id={scannerId} className="w-full aspect-[4/3] bg-black rounded-lg" />
               {permission === 'checking' && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-lg">
-                  <p className="text-white text-sm">Meminta izin kamera...</p>
+                  <p className="text-white text-sm">{t('barcodeScanner.requestingPermission')}</p>
                 </div>
               )}
             </>
@@ -336,7 +334,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
             <div className="absolute bottom-4 left-0 right-0 flex justify-center">
               <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-full">
                 <p className="text-white text-xs text-center">
-                  Arahkan barcode ke dalam kotak scan
+                  {t('barcodeScanner.scanHint')}
                 </p>
               </div>
             </div>
@@ -346,7 +344,7 @@ export default function BarcodeScanner({ open, onClose, onScan }: BarcodeScanner
         <div className="p-4 pt-2">
           <Button variant="outline" className="w-full" onClick={handleClose}>
             <CameraOff className="w-4 h-4 mr-2" />
-            {showError ? 'Tutup' : 'Batal'}
+            {showError ? t('barcodeScanner.close') : t('barcodeScanner.cancel')}
           </Button>
         </div>
       </DialogContent>

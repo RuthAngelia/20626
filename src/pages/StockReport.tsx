@@ -6,12 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays, startOfDay } from 'date-fns';
-import { id } from 'date-fns/locale';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
+import { useTranslation } from 'react-i18next';
+
+const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'RM' };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 export default function StockReport() {
   const { can } = useAuth();
+  const { t, i18n } = useTranslation('settings');
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
+  const currencySymbol = CURRENCY_SYMBOL[i18n.language] ?? 'Rp';
   const [period, setPeriod] = useState<'7' | '30'>('7');
   const days = Number(period);
   const since = startOfDay(subDays(new Date(), days));
@@ -21,7 +27,7 @@ export default function StockReport() {
   const stockOuts = useLiveQuery(async () => db.stockOuts.where('date').aboveOrEqual(since).toArray(), [days]);
 
   if (!can('view_reports')) {
-    return <LockedPage title="Laporan Stok" permissionLabel="Lihat Laporan & Profit" />;
+    return <LockedPage title={t('stockReport.locked.title')} permissionLabel={t('stockReport.locked.permissionLabel')} />;
   }
 
   const totalStockIn = stockIns?.reduce((s, si) => s + si.quantity, 0) ?? 0;
@@ -77,28 +83,34 @@ export default function StockReport() {
     });
   })();
 
-  const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
+  const rp = (n: number) => `${currencySymbol} ${n.toLocaleString(numberLocale)}`;
 
-  const reasonLabels: Record<string, string> = {
-    rusak: 'Rusak',
-    hilang: 'Hilang',
-    retur: 'Retur',
-    expired: 'Expired',
-    sample: 'Sample',
-    lain: 'Lainnya',
+  const getReasonLabel = (reason: string) => {
+    const keyMap: Record<string, string> = {
+      rusak: 'damaged',
+      hilang: 'lost',
+      retur: 'return',
+      expired: 'expired',
+      sample: 'sample',
+      lain: 'other',
+    };
+    return t(`stockReport.reasons.${keyMap[reason] ?? 'other'}`, reason);
   };
+
+  const stockInLabel = t('stockReport.movementChart.in');
+  const stockOutLabel = t('stockReport.movementChart.out');
 
   return (
     <div className="px-4 pt-6 pb-20 space-y-5">
       <h1 className="text-xl font-bold flex items-center gap-2">
         <Warehouse className="w-5 h-5 text-primary" />
-        Laporan Stok
+        {t('stockReport.title')}
       </h1>
 
       <Tabs value={period} onValueChange={v => setPeriod(v as '7' | '30')}>
         <TabsList className="w-full">
-          <TabsTrigger value="7" className="flex-1">7 Hari</TabsTrigger>
-          <TabsTrigger value="30" className="flex-1">30 Hari</TabsTrigger>
+          <TabsTrigger value="7" className="flex-1">{t('stockReport.period.7days')}</TabsTrigger>
+          <TabsTrigger value="30" className="flex-1">{t('stockReport.period.30days')}</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -108,21 +120,21 @@ export default function StockReport() {
           <CardContent className="p-3 text-center">
             <ArrowDownToLine className="w-4 h-4 mx-auto text-success mb-1" />
             <p className="text-lg font-bold">{totalStockIn}</p>
-            <p className="text-[10px] text-muted-foreground">Masuk</p>
+            <p className="text-[10px] text-muted-foreground">{t('stockReport.summary.in')}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-3 text-center">
             <ArrowUpFromLine className="w-4 h-4 mx-auto text-destructive mb-1" />
             <p className="text-lg font-bold">{totalStockOut}</p>
-            <p className="text-[10px] text-muted-foreground">Keluar</p>
+            <p className="text-[10px] text-muted-foreground">{t('stockReport.summary.out')}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-3 text-center">
             <Package className="w-4 h-4 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{currentStock}</p>
-            <p className="text-[10px] text-muted-foreground">Tersedia</p>
+            <p className="text-[10px] text-muted-foreground">{t('stockReport.summary.available')}</p>
           </CardContent>
         </Card>
       </div>
@@ -132,16 +144,16 @@ export default function StockReport() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-1.5">
             <TrendingUp className="w-4 h-4 text-success" />
-            Nilai Stok Masuk
+            {t('stockReport.stockInValue.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Total Pembelian</span>
+            <span className="text-sm text-muted-foreground">{t('stockReport.stockInValue.totalPurchase')}</span>
             <span className="text-lg font-bold text-success">{rp(totalStockInValue)}</span>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Rata-rata: {totalStockIn > 0 ? rp(totalStockInValue / totalStockIn) : rp(0)} per unit
+            {t('stockReport.stockInValue.average', { avg: totalStockIn > 0 ? rp(totalStockInValue / totalStockIn) : rp(0) })}
           </p>
         </CardContent>
       </Card>
@@ -151,7 +163,7 @@ export default function StockReport() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-1.5">
             <BarChart3 className="w-4 h-4" />
-            Pergerakan Stok
+            {t('stockReport.movementChart.title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="pb-4">
@@ -160,12 +172,12 @@ export default function StockReport() {
               <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip 
-                formatter={(v: number, name: string) => [v, name === 'stockIn' ? 'Masuk' : 'Keluar']} 
+                formatter={(v: number, name: string) => [v, name === 'stockIn' ? stockInLabel : stockOutLabel]} 
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 labelStyle={{ fontSize: 10 }}
               />
-              <Bar dataKey="stockIn" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} name="Masuk" />
-              <Bar dataKey="stockOut" fill="hsl(0, 84%, 60%)" radius={[2, 2, 0, 0]} name="Keluar" />
+              <Bar dataKey="stockIn" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} name={stockInLabel} />
+              <Bar dataKey="stockOut" fill="hsl(0, 84%, 60%)" radius={[2, 2, 0, 0]} name={stockOutLabel} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -177,14 +189,14 @@ export default function StockReport() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-1.5">
               <ArrowUpFromLine className="w-4 h-4 text-destructive" />
-              Alasan Stock Keluar
+              {t('stockReport.reasons.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {Object.entries(stockOutByReason).map(([reason, qty]) => (
               <div key={reason} className="flex items-center justify-between">
-                <span className="text-sm">{reasonLabels[reason] || reason}</span>
-                <span className="font-semibold text-destructive">{qty} unit</span>
+                <span className="text-sm">{getReasonLabel(reason)}</span>
+                <span className="font-semibold text-destructive">{qty} {t('stockReport.reasons.unit')}</span>
               </div>
             ))}
           </CardContent>
@@ -197,7 +209,7 @@ export default function StockReport() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-1.5 text-warning">
               <AlertTriangle className="w-4 h-4" />
-              Stok Menipis ({lowStockProducts.length})
+              {t('stockReport.lowStock.title', { count: lowStockProducts.length })}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -208,7 +220,9 @@ export default function StockReport() {
               </div>
             ))}
             {lowStockProducts.length > 5 && (
-              <p className="text-xs text-muted-foreground text-center">+{lowStockProducts.length - 5} produk lainnya</p>
+              <p className="text-xs text-muted-foreground text-center">
+                {t('stockReport.lowStock.more', { count: lowStockProducts.length - 5 })}
+              </p>
             )}
           </CardContent>
         </Card>
@@ -220,7 +234,7 @@ export default function StockReport() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-1.5 text-destructive">
               <Package className="w-4 h-4" />
-              Stok Habis ({outOfStockProducts.length})
+              {t('stockReport.outOfStock.title', { count: outOfStockProducts.length })}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -231,7 +245,9 @@ export default function StockReport() {
               </div>
             ))}
             {outOfStockProducts.length > 5 && (
-              <p className="text-xs text-muted-foreground text-center">+{outOfStockProducts.length - 5} produk lainnya</p>
+              <p className="text-xs text-muted-foreground text-center">
+                {t('stockReport.lowStock.more', { count: outOfStockProducts.length - 5 })}
+              </p>
             )}
           </CardContent>
         </Card>

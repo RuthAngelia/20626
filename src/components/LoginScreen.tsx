@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Lock, User as UserIcon, Eye, EyeOff, Store, LogIn } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useTranslation } from 'react-i18next';
 import { db } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
 export default function LoginScreen() {
+  const { t } = useTranslation('settings');
   const { login } = useAuth();
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
 
@@ -30,7 +32,7 @@ export default function LoginScreen() {
     try {
       const result = await login(username, pin);
       if (!result.ok) {
-        toast.error(result.error || 'Login gagal');
+        toast.error(result.error || t('loginScreen.loginFailed'));
         setPin('');
         pinRef.current?.focus();
       }
@@ -49,27 +51,27 @@ export default function LoginScreen() {
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-20 h-20 rounded-2xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden mb-3">
             {storeSettings?.logo ? (
-              <img src={storeSettings.logo} alt="Logo" className="w-full h-full object-cover" />
+              <img src={storeSettings.logo} alt={t('loginScreen.logoAlt')} className="w-full h-full object-cover" />
             ) : (
               <Store className="w-8 h-8" />
             )}
           </div>
-          <h1 className="text-xl font-bold">{storeSettings?.storeName || 'FreeKasir'}</h1>
-          <p className="text-xs text-muted-foreground mt-1">Masuk untuk melanjutkan</p>
+          <h1 className="text-xl font-bold">{storeSettings?.storeName || t('loginScreen.storeFallback')}</h1>
+          <p className="text-xs text-muted-foreground mt-1">{t('loginScreen.continuePrompt')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="username" className="flex items-center gap-1.5 text-sm">
               <UserIcon className="w-3.5 h-3.5" />
-              Username
+              {t('loginScreen.usernameLabel')}
             </Label>
             <Input
               id="username"
               ref={usernameRef}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Contoh: budi"
+              placeholder={t('loginScreen.usernamePlaceholder')}
               autoComplete="username"
               autoCapitalize="none"
               autoCorrect="off"
@@ -82,7 +84,7 @@ export default function LoginScreen() {
           <div className="space-y-2">
             <Label htmlFor="pin" className="flex items-center gap-1.5 text-sm">
               <Lock className="w-3.5 h-3.5" />
-              PIN
+              {t('loginScreen.pinLabel')}
             </Label>
             <div className="relative">
               <Input
@@ -94,7 +96,7 @@ export default function LoginScreen() {
                 maxLength={6}
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                placeholder="4-6 digit"
+                placeholder={t('loginScreen.pinPlaceholder')}
                 autoComplete="current-password"
                 className="h-12 pr-12 tracking-widest font-mono text-center text-lg"
                 disabled={submitting}
@@ -104,7 +106,7 @@ export default function LoginScreen() {
                 onClick={() => setShowPin((v) => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
                 tabIndex={-1}
-                aria-label={showPin ? 'Sembunyikan PIN' : 'Tampilkan PIN'}
+                aria-label={showPin ? t('loginScreen.hidePin') : t('loginScreen.showPin')}
               >
                 {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -118,12 +120,12 @@ export default function LoginScreen() {
             disabled={submitting || !username.trim() || pin.length < 4}
           >
             <LogIn className="w-4 h-4 mr-2" />
-            {submitting ? 'Masuk…' : 'Masuk'}
+            {submitting ? t('loginScreen.loggingIn') : t('loginScreen.loginButton')}
           </Button>
         </form>
 
         <p className="text-[11px] text-muted-foreground text-center mt-6">
-          Lupa PIN? Hubungi pemilik toko untuk reset.
+          {t('loginScreen.forgotPin')}
         </p>
       </div>
     </div>

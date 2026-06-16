@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { Download, Upload, ChevronLeft } from 'lucide-react';
@@ -10,12 +11,16 @@ import { restoreFromBackupData } from '@/lib/backup';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
+
 export default function BackupRestoreSettings() {
+  const { t, i18n } = useTranslation('settings');
   const { can } = useAuth();
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
 
   if (!can('manage_backup')) {
-    return <LockedPage title="Backup & Restore" permissionLabel="Kelola Backup" />;
+    return <LockedPage title={t('backupRestore.locked.title')} permissionLabel={t('backupRestore.locked.permissionLabel')} />;
   }
 
   const handleImport = () => {
@@ -27,12 +32,12 @@ export default function BackupRestoreSettings() {
       if (!file) return;
       try {
         const text = await file.text();
-        if (!text.trim()) { toast.error('File kosong'); return; }
+        if (!text.trim()) { toast.error(t('backupRestore.emptyFile')); return; }
         const data = JSON.parse(text);
         await restoreFromBackupData(data);
-        toast.success('Data berhasil di-restore!');
+        toast.success(t('backupRestore.restoreSuccess'));
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Gagal membaca file');
+        toast.error(err instanceof Error ? err.message : t('backupRestore.readError'));
       }
     };
     input.click();
@@ -46,20 +51,20 @@ export default function BackupRestoreSettings() {
         </Link>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Download className="w-5 h-5 text-primary" />
-          Backup & Restore
+          {t('backupRestore.title')}
         </h1>
       </div>
 
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4 space-y-2">
           <Button variant="outline" className="w-full h-10 text-sm gap-2" onClick={exportBackupData}>
-            <Download className="w-4 h-4" /> Export Backup (JSON)
+            <Download className="w-4 h-4" /> {t('backupRestore.exportButton')}
           </Button>
           <Button variant="outline" className="w-full h-10 text-sm gap-2" onClick={handleImport}>
-            <Upload className="w-4 h-4" /> Import / Restore Data
+            <Upload className="w-4 h-4" /> {t('backupRestore.importButton')}
           </Button>
           {storeSettings?.lastBackupAt && (
-            <p className="text-[10px] text-muted-foreground text-center">Terakhir backup: {new Date(storeSettings.lastBackupAt).toLocaleString('id-ID')}</p>
+            <p className="text-[10px] text-muted-foreground text-center">{t('backupRestore.lastBackup', { time: new Date(storeSettings.lastBackupAt).toLocaleString(numberLocale) })}</p>
           )}
         </CardContent>
       </Card>

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { format } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
+import { id, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { ArrowLeft, Banknote, CheckCircle2, ChevronRight, CreditCard, Receipt, Search, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -17,12 +18,22 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslation } from 'react-i18next';
+
+const LOCALES: Record<string, Locale> = { id, en: enUS, ms };
+const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'RM' };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 type DebtFilter = 'active' | 'paid' | 'all';
 
 export default function DebtsPage() {
   const navigate = useNavigate();
   const { can, currentUser } = useAuth();
+  const { t, i18n } = useTranslation('settings');
+  const dateLocale = LOCALES[i18n.language] ?? id;
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
+  const currencySymbol = CURRENCY_SYMBOL[i18n.language] ?? 'Rp';
+
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<DebtFilter>('active');
   const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
@@ -52,7 +63,7 @@ export default function DebtsPage() {
   }, [payments]);
 
   if (!can('manage_customers')) {
-    return <LockedPage title="Daftar Hutang" permissionLabel="Kelola Pelanggan" />;
+    return <LockedPage title={t('debts.locked.title')} permissionLabel={t('debts.locked.permissionLabel')} />;
   }
 
   const activeDebts = debts?.filter((debt) => debt.status !== 'paid') ?? [];
@@ -67,9 +78,9 @@ export default function DebtsPage() {
       (tx?.receiptNumber?.toLowerCase() ?? '').includes(query);
   });
 
-  const rp = (value: number) => `Rp ${value.toLocaleString('id-ID')}`;
+  const rp = (value: number) => `${currencySymbol} ${value.toLocaleString(numberLocale)}`;
   const getPaymentName = (id: number) =>
-    paymentMethods?.find((method) => method.id === id)?.name ?? 'Metode dihapus';
+    paymentMethods?.find((method) => method.id === id)?.name ?? t('debts.deletedMethodFallback');
 
   const openPayment = (debt: Debt) => {
     setSelectedDebt(debt);
@@ -83,11 +94,11 @@ export default function DebtsPage() {
     if (!selectedDebt?.id) return;
     const amount = Number(paymentAmount) || 0;
     if (amount <= 0 || amount > selectedDebt.remainingAmount) {
-      toast.error('Nominal pembayaran harus lebih dari Rp0 dan tidak melebihi sisa hutang');
+      toast.error(t('debts.toast.invalidAmount'));
       return;
     }
     if (!paymentMethodId) {
-      toast.error('Pilih metode pembayaran');
+      toast.error(t('debts.toast.selectMethod'));
       return;
     }
 
@@ -112,9 +123,9 @@ export default function DebtsPage() {
       });
       setSelectedDebt({ ...selectedDebt, remainingAmount, status: remainingAmount === 0 ? 'paid' : 'partial', settledAt: remainingAmount === 0 ? now : null });
       setPaymentOpen(false);
-      toast.success(remainingAmount === 0 ? 'Hutang berhasil dilunasi' : 'Pembayaran hutang dicatat');
+      toast.success(remainingAmount === 0 ? t('debts.toast.paidOff') : t('debts.toast.recorded'));
     } catch {
-      toast.error('Gagal mencatat pembayaran hutang');
+      toast.error(t('debts.toast.failed'));
     } finally {
       setSaving(false);
     }
@@ -128,17 +139,17 @@ export default function DebtsPage() {
         </Button>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-primary" />
-          Daftar Hutang
+          {t('debts.title')}
         </h1>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-warning/10 p-3 rounded-lg">
-          <p className="text-[10px] text-muted-foreground">Total Piutang</p>
+          <p className="text-[10px] text-muted-foreground">{t('debts.summary.totalReceivable')}</p>
           <p className="text-lg font-bold text-warning">{rp(totalReceivable)}</p>
         </div>
         <div className="bg-muted/50 p-3 rounded-lg">
-          <p className="text-[10px] text-muted-foreground">Hutang Aktif</p>
+          <p className="text-[10px] text-muted-foreground">{t('debts.summary.activeDebts')}</p>
           <p className="text-lg font-bold">{activeDebts.length}</p>
         </div>
       </div>
@@ -148,16 +159,16 @@ export default function DebtsPage() {
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Cari pelanggan atau nomor struk..."
+          placeholder={t('debts.searchPlaceholder')}
           className="pl-9 h-10"
         />
       </div>
 
       <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
         {([
-          ['active', 'Belum Lunas'],
-          ['paid', 'Lunas'],
-          ['all', 'Semua'],
+          ['active', t('debts.filters.active')],
+          ['paid', t('debts.filters.paid')],
+          ['all', t('debts.filters.all')],
         ] as const).map(([value, label]) => (
           <button
             key={value}
@@ -173,7 +184,7 @@ export default function DebtsPage() {
       {filteredDebts.length === 0 ? (
         <div className="text-center py-12">
           <CheckCircle2 className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">Tidak ada data hutang</p>
+          <p className="text-sm text-muted-foreground">{t('debts.empty')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -188,22 +199,22 @@ export default function DebtsPage() {
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{debt.customerName}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">
-                          {tx?.receiptNumber ?? '-'} · {format(new Date(debt.createdAt), 'dd MMM yyyy, HH:mm', { locale: localeId })}
+                          {tx?.receiptNumber ?? '-'} · {format(new Date(debt.createdAt), 'dd MMM yyyy, HH:mm', { locale: dateLocale })}
                         </p>
                       </div>
                       <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                     </div>
                     <div className="grid grid-cols-3 gap-2 mt-3">
                       <div>
-                        <p className="text-[9px] text-muted-foreground">Hutang Awal</p>
+                        <p className="text-[9px] text-muted-foreground">{t('debts.labels.originalAmount')}</p>
                         <p className="text-xs font-semibold">{rp(debt.originalAmount)}</p>
                       </div>
                       <div>
-                        <p className="text-[9px] text-muted-foreground">Dibayar</p>
+                        <p className="text-[9px] text-muted-foreground">{t('debts.labels.paid')}</p>
                         <p className="text-xs font-semibold text-success">{rp(paid)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[9px] text-muted-foreground">Sisa</p>
+                        <p className="text-[9px] text-muted-foreground">{t('debts.labels.remaining')}</p>
                         <p className={`text-xs font-bold ${debt.status === 'paid' ? 'text-success' : 'text-warning'}`}>{rp(debt.remainingAmount)}</p>
                       </div>
                     </div>
@@ -211,7 +222,7 @@ export default function DebtsPage() {
                   {debt.status !== 'paid' && (
                     <Button className="w-full h-9 mt-3" onClick={() => openPayment(debt)}>
                       <Banknote className="w-4 h-4 mr-2" />
-                      Catat Pembayaran
+                      {t('debts.recordPayment')}
                     </Button>
                   )}
                 </CardContent>
@@ -229,43 +240,43 @@ export default function DebtsPage() {
             return (
               <>
                 <SheetHeader>
-                  <SheetTitle>Detail Hutang</SheetTitle>
+                  <SheetTitle>{t('debts.detail.title')}</SheetTitle>
                 </SheetHeader>
                 <div className="space-y-4 mt-4">
                   <div className="space-y-2 rounded-lg bg-muted/50 p-3">
                     <div className="flex items-center justify-between gap-2">
                       <span className="flex items-center gap-2 text-sm font-semibold"><UserRound className="w-4 h-4" />{selectedDebt.customerName}</span>
                       <Badge variant={selectedDebt.status === 'paid' ? 'secondary' : 'default'}>
-                        {selectedDebt.status === 'paid' ? 'Lunas' : selectedDebt.status === 'partial' ? 'Sebagian' : 'Belum Dibayar'}
+                        {selectedDebt.status === 'paid' ? t('debts.detail.status.paid') : selectedDebt.status === 'partial' ? t('debts.detail.status.partial') : t('debts.detail.status.unpaid')}
                       </Badge>
                     </div>
                     <button type="button" className="flex items-center gap-2 text-xs text-primary" onClick={() => navigate(`/history?txId=${selectedDebt.transactionId}`)}>
                       <Receipt className="w-3.5 h-3.5" />
-                      {tx?.receiptNumber ?? 'Lihat transaksi'}
+                      {tx?.receiptNumber ?? t('debts.detail.viewTransaction')}
                     </button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-lg border p-3">
-                      <p className="text-[10px] text-muted-foreground">Hutang Awal</p>
+                      <p className="text-[10px] text-muted-foreground">{t('debts.labels.originalAmount')}</p>
                       <p className="text-base font-bold">{rp(selectedDebt.originalAmount)}</p>
                     </div>
                     <div className="rounded-lg border p-3">
-                      <p className="text-[10px] text-muted-foreground">Sisa Hutang</p>
+                      <p className="text-[10px] text-muted-foreground">{t('debts.labels.remaining')}</p>
                       <p className="text-base font-bold text-warning">{rp(selectedDebt.remainingAmount)}</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold">Riwayat Pembayaran</p>
+                    <p className="text-sm font-semibold">{t('debts.detail.paymentHistory')}</p>
                     {debtPayments.length === 0 ? (
-                      <p className="text-xs text-muted-foreground py-4 text-center">Belum ada cicilan</p>
+                      <p className="text-xs text-muted-foreground py-4 text-center">{t('debts.detail.noInstallments')}</p>
                     ) : debtPayments.map((payment) => (
                       <div key={payment.id} className="rounded-lg border p-3">
                         <div className="flex justify-between gap-3">
                           <div>
                             <p className="text-xs font-semibold">{getPaymentName(payment.paymentMethodId)}</p>
-                            <p className="text-[10px] text-muted-foreground">{format(new Date(payment.date), 'dd MMM yyyy, HH:mm', { locale: localeId })}</p>
+                            <p className="text-[10px] text-muted-foreground">{format(new Date(payment.date), 'dd MMM yyyy, HH:mm', { locale: dateLocale })}</p>
                           </div>
                           <p className="text-sm font-bold text-success">{rp(payment.amount)}</p>
                         </div>
@@ -277,7 +288,7 @@ export default function DebtsPage() {
                   {selectedDebt.status !== 'paid' && (
                     <Button className="w-full h-11" onClick={() => openPayment(selectedDebt)}>
                       <Banknote className="w-4 h-4 mr-2" />
-                      Catat Pembayaran
+                      {t('debts.recordPayment')}
                     </Button>
                   )}
                 </div>
@@ -290,15 +301,15 @@ export default function DebtsPage() {
       <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl">
           <DialogHeader>
-            <DialogTitle>Catat Pembayaran Hutang</DialogTitle>
+            <DialogTitle>{t('debts.paymentDialog.title')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="rounded-lg bg-warning/10 p-3 flex justify-between items-center">
-              <span className="text-sm">Sisa Hutang</span>
+              <span className="text-sm">{t('debts.paymentDialog.remainingDebt')}</span>
               <span className="font-bold text-warning">{rp(selectedDebt?.remainingAmount ?? 0)}</span>
             </div>
             <div className="space-y-1.5">
-              <Label>Nominal Pembayaran</Label>
+              <Label>{t('debts.paymentDialog.amountLabel')}</Label>
               <Input
                 type="number"
                 inputMode="numeric"
@@ -308,9 +319,9 @@ export default function DebtsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Metode Pembayaran</Label>
+              <Label>{t('debts.paymentDialog.methodLabel')}</Label>
               <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Pilih metode" /></SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue placeholder={t('debts.paymentDialog.methodPlaceholder')} /></SelectTrigger>
                 <SelectContent>
                   {paymentMethods?.map((method) => (
                     <SelectItem key={method.id} value={String(method.id)}>{method.name}</SelectItem>
@@ -319,16 +330,16 @@ export default function DebtsPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Keterangan</Label>
+              <Label>{t('debts.paymentDialog.notesLabel')}</Label>
               <Textarea
                 value={paymentNotes}
                 onChange={(event) => setPaymentNotes(event.target.value)}
-                placeholder="Contoh: cicilan pertama"
+                placeholder={t('debts.paymentDialog.notesPlaceholder')}
                 rows={3}
               />
             </div>
             <Button className="w-full h-11" onClick={savePayment} disabled={saving || !paymentMethodId || Number(paymentAmount) <= 0}>
-              {saving ? 'Menyimpan...' : 'Simpan Pembayaran'}
+              {saving ? t('debts.paymentDialog.saving') : t('debts.paymentDialog.save')}
             </Button>
           </div>
         </DialogContent>

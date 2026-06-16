@@ -1,0 +1,89 @@
+{
+  "slides": {
+    "welcome": {
+      "title": "Welcome to FreeKasir",
+      "description": "A free POS app. Manage sales, stock, and financial reports — all in one app, right from your phone, hassle-free."
+    },
+    "cashier": {
+      "title": "Fast & Easy Cashier",
+      "description": "Process transactions quickly. Select products, set discounts, and choose payment methods — all in seconds."
+    },
+    "stock": {
+      "title": "Automatic Stock Management",
+      "description": "Record incoming stock from suppliers, stock decreases automatically on sales, and COGS is calculated automatically."
+    },
+    "reports": {
+      "title": "Complete Reports",
+      "description": "Monitor daily sales, profit, and top-selling products. All data presented in easy-to-understand charts."
+    },
+    "data": {
+      "title": "Your Data Stays on Your Phone",
+      "description": "All data is stored on your device. No internet needed, no server needed. Free forever!"
+    }
+  },
+  "install": {
+    "installed": "Installed!",
+    "title": "Install as App",
+    "installedDesc": "FreeKasir is installed. You can open it directly from your home screen!",
+    "desc": "Install FreeKasir on your phone to access it directly from the home screen, without opening a browser.",
+    "button": "Install as App",
+    "continueBrowser": "Continue in Browser",
+    "chromeHint": "To install, open in Chrome browser, then tap menu (⋮) → \"Add to Home screen\" or \"Install app\".",
+    "safariHint": "On Safari iOS: tap the Share button (↑) → \"Add to Home Screen\""
+  },
+  "store": {
+    "title": "Set Up Your Store",
+    "subtitle": "This info will appear on receipts",
+    "storeName": "Store Name",
+    "storeNamePlaceholder": "e.g. Berkah Jaya Store",
+    "address": "Address",
+    "addressPlaceholder": "e.g. 10 Merdeka St, Jakarta",
+    "phone": "Phone Number",
+    "phonePlaceholder": "e.g. 08123456789",
+    "loadDummy": "Load sample data",
+    "loadDummyDesc": "11 products, 2 suppliers, 3 demo transactions",
+    "theme": "Theme Color",
+    "themeDesc": "Choose the app's main color",
+    "start": "Start Selling! 🚀",
+    "saving": "Saving..."
+  },
+  "restore": {
+    "title": "Already have a backup?",
+    "desc": "Restore a JSON file from your old device — no need to set up the store again.",
+    "backupButton": "Restore Store from Backup",
+    "restoring": "Restoring data...",
+    "cloudTitle": "Restore from Cloud",
+    "cloudSubtitle": "Sign in with Google, then choose a backup to restore.",
+    "cloudLogin": "Sign in with Google to view cloud backups.",
+    "googleContinue": "Continue with Google",
+    "account": "Google Account",
+    "switchAccount": "Switch",
+    "noBackups": "No cloud backups for this account.",
+    "restoringInProgress": "Restoring data… do not close the app."
+  },
+  "tnc": {
+    "agree": "By continuing, I agree to the",
+    "terms": "Terms & Conditions",
+    "and": "and",
+    "privacy": "Privacy Policy"
+  },
+  "navigation": {
+    "next": "Next",
+    "finish": "Start Selling! 🚀",
+    "saving": "Saving..."
+  },
+  "toast": {
+    "googleLoginFailed": "Google login failed",
+    "restoreInvalidFile": "Invalid backup file",
+    "restoreNoData": "Backup file contains no data",
+    "restoreSuccess": "Data restored successfully!",
+    "restoreError": "Failed to read/restore backup file",
+    "cloudRestoreSuccess": "Data restored from cloud!",
+    "cloudRestoreError": "Failed to restore from cloud",
+    "cloudLoadError": "Failed to load cloud backups"
+  },
+  "language": {
+    "title": "Choose Language",
+    "subtitle": "Select your preferred language"
+  }
+}

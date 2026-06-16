@@ -2,7 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Transaction, type TransactionItemRecord } from '@/lib/db';
 import { useState, useEffect } from 'react';
 import { format, startOfDay, endOfDay } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
+import { id as idLocale, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { ArrowLeft, Search, Receipt as ReceiptIcon, Calendar, ChevronRight, ShoppingBag, CalendarIcon, X, Trash2, ShoppingCart, UserCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,8 +20,16 @@ import { cn } from '@/lib/utils';
 import ReceiptDialog from '@/components/Receipt';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
+import { useTranslation } from 'react-i18next';
+
+const LOCALES: Record<string, Locale> = { id: idLocale, en: enUS, ms };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 export default function TransactionHistory() {
+  const { t, i18n } = useTranslation('settings');
+  const dateLocale = LOCALES[i18n.language] ?? idLocale;
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { can, multiUserEnabled } = useAuth();
@@ -60,6 +69,9 @@ export default function TransactionHistory() {
   const userById = (uid?: number) => (uid ? users?.find((u) => u.id === uid) : undefined);
   const cashierName = (uid?: number) => userById(uid)?.name ?? '—';
 
+  const getPaymentName = (pmId: number) =>
+    paymentMethods?.find(pm => pm.id === pmId)?.name || t('transactionHistory.cashFallback');
+
   // Auto-open detail if txId is in URL
   const txIdParam = searchParams.get('txId');
   useEffect(() => {
@@ -72,8 +84,6 @@ export default function TransactionHistory() {
     }
   }, [txIdParam, transactions]);
 
-  const getPaymentName = (pmId: number) =>
-    paymentMethods?.find(pm => pm.id === pmId)?.name || 'Tunai';
   const getDebt = (txId?: number) => txId ? debts?.find((debt) => debt.transactionId === txId) : undefined;
 
   const filtered = transactions?.filter(tx => {
@@ -143,7 +153,7 @@ export default function TransactionHistory() {
       if (debt?.id) {
         const installmentCount = await db.debtPayments.where('debtId').equals(debt.id).count();
         if (installmentCount > 0) {
-          toast.error('Transaksi tidak dapat dihapus karena sudah memiliki pembayaran hutang');
+          toast.error(t('transactionHistory.toast.hasDebtPayments'));
           setDeleteDialogOpen(false);
           return;
         }
@@ -163,13 +173,13 @@ export default function TransactionHistory() {
       setDeleteDialogOpen(false);
       setDetailOpen(false);
       setSelectedTx(null);
-      toast.success('Transaksi berhasil dihapus');
+      toast.success(t('transactionHistory.toast.deleteSuccess'));
     } catch {
-      toast.error('Gagal menghapus transaksi');
+      toast.error(t('transactionHistory.toast.deleteFailed'));
     }
   };
 
-  const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
+  const rp = (n: number) => `Rp ${n.toLocaleString(numberLocale)}`;
 
   return (
     <div className="px-4 pt-6 pb-4">
@@ -180,7 +190,7 @@ export default function TransactionHistory() {
         </Button>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <ReceiptIcon className="w-5 h-5 text-primary" />
-          Riwayat Transaksi
+          {t('transactionHistory.title')}
         </h1>
       </div>
 
@@ -188,7 +198,7 @@ export default function TransactionHistory() {
       <div className="relative mb-3">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Cari no. struk atau nama produk..."
+          placeholder={t('transactionHistory.searchPlaceholder')}
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="pl-9 h-10"
@@ -201,7 +211,7 @@ export default function TransactionHistory() {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className={cn("h-9 text-xs gap-1.5 flex-1", dateFrom && "border-primary text-primary")}>
               <CalendarIcon className="w-3.5 h-3.5" />
-              {dateFrom ? format(dateFrom, 'dd MMM yyyy', { locale: localeId }) : 'Dari tanggal'}
+              {dateFrom ? format(dateFrom, 'dd MMM yyyy', { locale: dateLocale }) : t('transactionHistory.dateFrom')}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -221,7 +231,7 @@ export default function TransactionHistory() {
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className={cn("h-9 text-xs gap-1.5 flex-1", dateTo && "border-primary text-primary")}>
               <CalendarIcon className="w-3.5 h-3.5" />
-              {dateTo ? format(dateTo, 'dd MMM yyyy', { locale: localeId }) : 'Sampai tanggal'}
+              {dateTo ? format(dateTo, 'dd MMM yyyy', { locale: dateLocale }) : t('transactionHistory.dateTo')}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="end">
@@ -245,9 +255,9 @@ export default function TransactionHistory() {
       {/* Status filter tabs */}
       <div className="flex gap-1.5 mb-4">
         {([
-          { value: 'all', label: 'Semua' },
-          { value: 'open', label: 'Open Bill' },
-          { value: 'completed', label: 'Lunas' },
+          { value: 'all', label: t('transactionHistory.status.all') },
+          { value: 'open', label: t('transactionHistory.status.open') },
+          { value: 'completed', label: t('transactionHistory.status.completed') },
         ] as const).map(tab => (
           <button
             key={tab.value}
@@ -269,17 +279,17 @@ export default function TransactionHistory() {
             <SelectTrigger className="h-9 text-xs">
               <div className="flex items-center gap-1.5">
                 <UserCircle2 className="w-3.5 h-3.5 text-muted-foreground" />
-                <SelectValue placeholder="Filter Kasir" />
+                <SelectValue placeholder={t('transactionHistory.cashierFilter.placeholder')} />
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Kasir</SelectItem>
+              <SelectItem value="all">{t('transactionHistory.cashierFilter.all')}</SelectItem>
               {users.map((u) => (
                 <SelectItem key={u.id} value={String(u.id)}>
-                  {u.name} (@{u.username})
+                  {t('transactionHistory.cashierFilter.cashierLabel', { name: u.name, username: u.username })}
                 </SelectItem>
               ))}
-              <SelectItem value="unknown">Tanpa Kasir (data lama)</SelectItem>
+              <SelectItem value="unknown">{t('transactionHistory.cashierFilter.unknown')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -290,13 +300,13 @@ export default function TransactionHistory() {
         <div className="grid grid-cols-2 gap-2 mb-4">
           <Card className="border-0 shadow-sm">
             <CardContent className="p-3 text-center">
-              <p className="text-[10px] text-muted-foreground">Total Transaksi</p>
+              <p className="text-[10px] text-muted-foreground">{t('transactionHistory.summary.totalTransactions')}</p>
               <p className="text-lg font-bold text-primary">{filtered.length}</p>
             </CardContent>
           </Card>
           <Card className="border-0 shadow-sm">
             <CardContent className="p-3 text-center">
-              <p className="text-[10px] text-muted-foreground">Total Penjualan</p>
+              <p className="text-[10px] text-muted-foreground">{t('transactionHistory.summary.totalSales')}</p>
               <p className="text-lg font-bold text-primary">{rp(filteredTotal)}</p>
             </CardContent>
           </Card>
@@ -308,7 +318,7 @@ export default function TransactionHistory() {
         <div className="text-center py-16">
           <ShoppingBag className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
-            {hasDateFilter ? 'Tidak ada transaksi di rentang tanggal ini' : 'Belum ada transaksi'}
+            {hasDateFilter ? t('transactionHistory.empty.withDateFilter') : t('transactionHistory.empty.noDateFilter')}
           </p>
         </div>
       ) : (
@@ -318,11 +328,8 @@ export default function TransactionHistory() {
               <div className="flex items-center gap-2 mb-2">
                 <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                 <p className="text-xs font-semibold text-muted-foreground">
-                  {format(new Date(dateKey), 'EEEE, dd MMMM yyyy', { locale: localeId })}
+                  {t('transactionHistory.groupHeader_other', { date: format(new Date(dateKey), 'EEEE, dd MMMM yyyy', { locale: dateLocale }), count: grouped[dateKey].length })}
                 </p>
-                <Badge variant="secondary" className="text-[10px] h-5">
-                  {grouped[dateKey].length} transaksi
-                </Badge>
               </div>
               <div className="space-y-2">
                 {grouped[dateKey].map(tx => (
@@ -340,11 +347,11 @@ export default function TransactionHistory() {
                           <div className="flex items-center gap-1.5">
                             <p className="text-xs font-mono text-muted-foreground truncate">{tx.receiptNumber}</p>
                             {tx.status === 'open' ? (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-warning/20 text-warning border-warning/30">Open</Badge>
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-warning/20 text-warning border-warning/30">{t('transactionHistory.badges.open')}</Badge>
                             ) : getDebt(tx.id)?.status !== undefined && getDebt(tx.id)?.status !== 'paid' ? (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-warning/20 text-warning border-warning/30">Hutang</Badge>
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-warning/20 text-warning border-warning/30">{t('transactionHistory.badges.debt')}</Badge>
                             ) : (
-                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-success/20 text-success border-success/30">Lunas</Badge>
+                              <Badge variant="secondary" className="text-[9px] h-4 px-1.5 bg-success/20 text-success border-success/30">{t('transactionHistory.badges.paid')}</Badge>
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">{format(new Date(tx.date), 'HH:mm')}</p>
@@ -358,7 +365,7 @@ export default function TransactionHistory() {
                             </span>
                           )}
                           {tx.customerName && <span>👤 {tx.customerName}</span>}
-                          {tx.tableNumber && <span>Meja {tx.tableNumber}</span>}
+                          {tx.tableNumber && <span>{t('transactionHistory.detail.table', { number: tx.tableNumber })}</span>}
                           {tx.remarks && <span>📝 {tx.remarks}</span>}
                         </div>
                         <p className="text-[10px] text-muted-foreground truncate">
@@ -379,38 +386,38 @@ export default function TransactionHistory() {
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
         <SheetContent side="bottom" className="h-[80vh] rounded-t-2xl max-w-lg md:max-w-xl mx-auto flex flex-col">
           <SheetHeader className="shrink-0">
-            <SheetTitle className="text-left">Detail Transaksi</SheetTitle>
+            <SheetTitle className="text-left">{t('transactionHistory.detail.title')}</SheetTitle>
           </SheetHeader>
           {selectedTx && (
             <div className="flex-1 overflow-y-auto mt-4 space-y-4 pb-6">
               <div className="bg-muted/50 rounded-xl p-3 space-y-1">
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Status</span>
+                  <span className="text-muted-foreground">{t('transactionHistory.detail.status.label')}</span>
                   <span className={cn('font-semibold', selectedTx.status === 'open' ? 'text-warning' : 'text-success')}>
-                    {selectedTx.status === 'open' ? 'Open Bill' : 'Lunas'}
+                    {selectedTx.status === 'open' ? t('transactionHistory.detail.status.open') : t('transactionHistory.detail.status.paid')}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">No. Struk</span>
+                  <span className="text-muted-foreground">{t('transactionHistory.detail.receiptNumber')}</span>
                   <span className="font-mono font-medium">{selectedTx.receiptNumber}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Tanggal</span>
-                  <span>{format(new Date(selectedTx.date), 'dd MMM yyyy, HH:mm', { locale: localeId })}</span>
+                  <span className="text-muted-foreground">{t('transactionHistory.detail.date')}</span>
+                  <span>{format(new Date(selectedTx.date), 'dd MMM yyyy, HH:mm', { locale: dateLocale })}</span>
                 </div>
                  <div className="flex justify-between text-xs">
-                   <span className="text-muted-foreground">Pembayaran</span>
+                   <span className="text-muted-foreground">{t('transactionHistory.detail.payment')}</span>
                    <span>
                      {selectedTx.status === 'open'
                        ? '-'
                        : getDebt(selectedTx.id)
-                         ? `${selectedTx.paymentAmount > 0 ? `${getPaymentName(selectedTx.paymentMethodId)} + ` : ''}Hutang`
+                         ? `${selectedTx.paymentAmount > 0 ? `${getPaymentName(selectedTx.paymentMethodId)} + ` : ''}${t('transactionHistory.badges.debt')}`
                          : getPaymentName(selectedTx.paymentMethodId)}
                    </span>
                  </div>
                  {multiUserEnabled && (
                    <div className="flex justify-between text-xs">
-                     <span className="text-muted-foreground">Kasir</span>
+                     <span className="text-muted-foreground">{t('transactionHistory.detail.cashier')}</span>
                      <span className="flex items-center gap-1">
                        <UserCircle2 className="w-3 h-3" />
                        {cashierName(selectedTx.createdBy)}
@@ -419,33 +426,33 @@ export default function TransactionHistory() {
                  )}
                  {selectedTx.customerName && (
                    <div className="flex justify-between text-xs">
-                     <span className="text-muted-foreground">Pelanggan</span>
+                     <span className="text-muted-foreground">{t('transactionHistory.detail.customer')}</span>
                      <span>👤 {selectedTx.customerName}</span>
                    </div>
                  )}
                  {selectedTx.tableNumber && (
                    <div className="flex justify-between text-xs">
-                     <span className="text-muted-foreground">Meja</span>
-                     <span>{selectedTx.tableNumber}</span>
+                     <span className="text-muted-foreground">{t('transactionHistory.detail.table', { number: selectedTx.tableNumber })}</span>
+                     <span />
                    </div>
                  )}
                   {selectedTx.remarks && (
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Catatan</span>
+                      <span className="text-muted-foreground">{t('transactionHistory.detail.notes')}</span>
                       <span className="text-right max-w-[60%]">{selectedTx.remarks}</span>
                     </div>
                   )}
                 </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground">Item</p>
+                <p className="text-xs font-semibold text-muted-foreground">{t('transactionHistory.detail.items')}</p>
                 {getTxItems(selectedTx.id).map((item, i) => (
                   <div key={i} className="flex justify-between items-start bg-muted/30 p-2.5 rounded-lg">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{item.productName}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {item.quantity} × {rp(item.price)}
-                        {item.discountAmount > 0 && ` (diskon ${rp(item.discountAmount)})`}
+                        {t('transactionHistory.detail.quantityFormat', { qty: item.quantity, price: rp(item.price) })}
+                        {item.discountAmount > 0 && ` (${t('transactionHistory.detail.discount', { amount: rp(item.discountAmount) })})`}
                       </p>
                       {item.notes && (
                         <p className="text-[10px] text-accent mt-0.5">📝 {item.notes}</p>
@@ -458,22 +465,22 @@ export default function TransactionHistory() {
 
               <div className="border-t pt-3 space-y-1.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t('transactionHistory.detail.subtotal')}</span>
                   <span>{rp(selectedTx.subtotal)}</span>
                 </div>
                 {selectedTx.discountAmount > 0 && (
                   <div className="flex justify-between text-sm text-destructive">
-                    <span>Diskon</span>
+                    <span>{t('transactionHistory.detail.discountAmount')}</span>
                     <span>-{rp(selectedTx.discountAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-bold">
-                  <span>Total</span>
+                  <span>{t('transactionHistory.detail.total')}</span>
                   <span className="text-primary">{rp(selectedTx.total)}</span>
                 </div>
                 {getDebt(selectedTx.id) && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Sisa Hutang</span>
+                    <span className="text-muted-foreground">{t('transactionHistory.detail.remainingDebt')}</span>
                     <span className={getDebt(selectedTx.id)?.status === 'paid' ? 'text-success font-medium' : 'text-warning font-medium'}>
                       {rp(getDebt(selectedTx.id)?.remainingAmount ?? 0)}
                     </span>
@@ -482,34 +489,34 @@ export default function TransactionHistory() {
                 {selectedTx.status !== 'open' ? (
                   <>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Bayar</span>
+                      <span className="text-muted-foreground">{t('transactionHistory.detail.paid')}</span>
                       <span>{rp(selectedTx.paymentAmount)}</span>
                     </div>
                     {!getDebt(selectedTx.id) && (
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Kembali</span>
+                        <span className="text-muted-foreground">{t('transactionHistory.detail.change')}</span>
                         <span className="text-success font-medium">{rp(selectedTx.change)}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Profit</span>
+                      <span className="text-muted-foreground">{t('transactionHistory.detail.profit')}</span>
                       <span className="text-success font-medium">{rp(selectedTx.profit)}</span>
                     </div>
                   </>
                 ) : (
-                  <p className="text-xs text-warning italic">Bill belum dibayar</p>
+                  <p className="text-xs text-warning italic">{t('transactionHistory.detail.unpaidBill')}</p>
                 )}
               </div>
 
               {selectedTx.status === 'open' ? (
                 <Button className="w-full h-11" onClick={() => { setDetailOpen(false); navigate('/cashier'); }}>
                   <ShoppingCart className="w-4 h-4 mr-2" />
-                  Lanjutkan di Kasir
+                  {t('transactionHistory.detail.continueInCashier')}
                 </Button>
               ) : (
                 <Button className="w-full h-11" onClick={openReceipt}>
                   <ReceiptIcon className="w-4 h-4 mr-2" />
-                  Lihat & Cetak Struk
+                  {t('transactionHistory.detail.viewReceipt')}
                 </Button>
               )}
 
@@ -518,10 +525,10 @@ export default function TransactionHistory() {
                 className="w-full h-11 text-destructive border-destructive/30 hover:bg-destructive/5"
                 onClick={() => { setRestoreStock(true); setDeleteDialogOpen(true); }}
                 disabled={!can('delete_transaction')}
-                title={!can('delete_transaction') ? 'Anda tidak punya akses untuk menghapus transaksi' : undefined}
+                title={!can('delete_transaction') ? t('transactionHistory.detail.noDeletePermission') : undefined}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Hapus Transaksi
+                {t('transactionHistory.detail.delete')}
               </Button>
             </div>
           )}
@@ -538,7 +545,7 @@ export default function TransactionHistory() {
           storeSettings={storeSettings}
           paymentMethodName={
             getDebt(selectedTx.id)
-              ? `${selectedTx.paymentAmount > 0 ? `${getPaymentName(selectedTx.paymentMethodId)} + ` : ''}Hutang`
+              ? `${selectedTx.paymentAmount > 0 ? `${getPaymentName(selectedTx.paymentMethodId)} + ` : ''}${t('transactionHistory.badges.debt')}`
               : getPaymentName(selectedTx.paymentMethodId)
           }
           cashierName={selectedTx.createdBy ? cashierName(selectedTx.createdBy) : undefined}
@@ -549,10 +556,10 @@ export default function TransactionHistory() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+            <AlertDialogTitle>{t('transactionHistory.deleteDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>Transaksi <span className="font-mono font-semibold">{selectedTx?.receiptNumber}</span> senilai <span className="font-semibold">Rp {selectedTx?.total.toLocaleString('id-ID')}</span> akan dihapus permanen.</p>
+                <p>{t('transactionHistory.deleteDialog.description', { receiptNumber: selectedTx?.receiptNumber, amount: rp(selectedTx?.total ?? 0) })}</p>
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="restore-stock"
@@ -560,16 +567,16 @@ export default function TransactionHistory() {
                     onCheckedChange={(checked) => setRestoreStock(checked === true)}
                   />
                   <label htmlFor="restore-stock" className="text-sm cursor-pointer">
-                    Kembalikan stok produk
+                    {t('transactionHistory.deleteDialog.restoreStock')}
                   </label>
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel>{t('transactionHistory.deleteDialog.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteTransaction} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Hapus
+              {t('transactionHistory.deleteDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,0 +1,141 @@
+{
+  "title": "Reports",
+  "export": "Export",
+  "locked": {
+    "title": "Reports",
+    "permissionLabel": "View Reports & Profit"
+  },
+  "tabs": {
+    "daily": "Daily",
+    "7days": "7 Days",
+    "30days": "30 Days"
+  },
+  "daily": {
+    "reportDate": "Report Date",
+    "includeExpenses": "Include expenses",
+    "includeExpensesHint": "Expenses will reduce net profit",
+    "printClosingReport": "Print Closing Report",
+    "noSalesSelectedDate": "* No sales transactions on selected date"
+  },
+  "summary": {
+    "transactions": "Transactions",
+    "sales": "Sales",
+    "profit": "Profit"
+  },
+  "dailySales": {
+    "title": "Daily Sales Total",
+    "grossSales": "Gross Sales",
+    "cashIn": "Cash In",
+    "avgTransaction": "Avg. Transaction",
+    "noSales": "No sales yet",
+    "transactionCount": "{{count}} transactions"
+  },
+  "pl": {
+    "title": "Profit & Loss",
+    "daily": "Daily Profit & Loss",
+    "grossRevenue": "Gross Revenue",
+    "discount": "Discount",
+    "netSales": "Net Sales",
+    "cogs": "COGS",
+    "grossProfit": "Gross Profit",
+    "grossMargin": "Gross Margin",
+    "operationalExpenses": "Operational Expenses",
+    "notIncluded": " (excluded)",
+    "netProfit": "Net Profit",
+    "netMargin": "Net Margin"
+  },
+  "expenses": {
+    "title": "Expenses by Category"
+  },
+  "chart": {
+    "title": "Sales Trend",
+    "tooltipLabel": "Sales"
+  },
+  "products": {
+    "title": "Top Products",
+    "daily": "Daily Top Products",
+    "noData": "No sales data yet",
+    "sold": "{{qty}} sold · profit {{profit}}"
+  },
+  "fallbacks": {
+    "uncategorized": "Uncategorized",
+    "noMethod": "No method",
+    "deletedMethod": "Method deleted",
+    "owner": "Owner"
+  },
+  "currency": "Rp {{amount}}",
+  "exportDialog": {
+    "title": "Export Report to Excel",
+    "description": "Select a date range. The file contains Summary, Transactions, Item Details, and Expenses sheets. Only paid transactions are counted.",
+    "fromDate": "From Date",
+    "toDate": "To Date",
+    "invalidRange": "End date must be the same as or after start date.",
+    "creating": "Creating file…",
+    "exportButton": "Export Excel",
+    "invalidRangeToast": "Invalid date range",
+    "noDataToast": "No data in this range — file will still be created (empty)",
+    "successToast": "Export successful: {{txCount}} transactions, {{expenseCount}} expenses",
+    "errorToast": "Failed to create Excel file"
+  },
+  "dailyReceipt": {
+    "title": "Closing Report Receipt",
+    "reportTitle": "DAILY SALES REPORT",
+    "period": "Period",
+    "transactionCount": "Transactions",
+    "itemCount": "Items Sold",
+    "sales": "SALES",
+    "grossSales": "Gross Sales",
+    "discount": "Discount",
+    "netSales": "Net Sales",
+    "expensesSection": "EXPENSES & NET PROFIT",
+    "expenses": "Expenses",
+    "netProfit": "Net Profit",
+    "payment": "PAYMENT",
+    "noPayment": "No payments yet",
+    "topProducts": "TOP PRODUCTS",
+    "noSales": "No sales yet",
+    "endOfReport": "END OF REPORT",
+    "printedBy": "Printed by",
+    "download": "Download",
+    "share": "Share",
+    "print": "Print",
+    "done": "Done",
+    "storeFallback": "Store",
+    "logoAlt": "Logo",
+    "captureError": "Failed to create report image",
+    "downloadSuccess": "Report downloaded successfully",
+    "shareTitle": "Closing Report",
+    "shareText": "Closing Report from {{storeName}}",
+    "shareFallbackTitle": "DAILY SALES REPORT - {{storeName}}",
+    "dateLabel": "Date",
+    "summary": "SUMMARY",
+    "shareFailed": "Failed to share receipt",
+    "bluetoothUnavailable": "Bluetooth is not available in this browser. Use Chrome on Android.",
+    "searchingPrinter": "Searching for Bluetooth printer...",
+    "printSuccess": "Report printed successfully!",
+    "printFailed": "Failed to print. Make sure the Bluetooth printer is on."
+  },
+  "survey": {
+    "title": "What type of business do you run with FreeKasir?",
+    "description": "Help us understand your needs by choosing one.",
+    "otherPlaceholder": "Write your business type…",
+    "submit": "Send",
+    "skip": "Skip",
+    "dontShowAgain": "Don't show again",
+    "thankYou": "Thank you for your feedback! 🙏",
+    "types": {
+      "groceryStore": "Grocery Store",
+      "coffeeShop": "Coffee Shop",
+      "cafeResto": "Cafe / Restaurant",
+      "clothingStore": "Clothing Store",
+      "grocery": "Grocery Store",
+      "pharmacy": "Pharmacy / Drugstore",
+      "hardwareStore": "Hardware Store",
+      "electronics": "Electronics Store",
+      "salonBarbershop": "Salon / Barbershop",
+      "laundry": "Laundry",
+      "onlineSeller": "Online Seller",
+      "other": "Other"
+    }
+  }
+}

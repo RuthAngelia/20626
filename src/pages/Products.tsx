@@ -18,10 +18,17 @@ import { trackEvent } from '@/lib/analytics';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import BarcodeScanner from '@/components/BarcodeScanner';
+import { useTranslation } from 'react-i18next';
+
+const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'RM' };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 export default function Produk() {
   const { currentUser, can } = useAuth();
   const canManage = can('manage_products');
+  const { t, i18n } = useTranslation('products');
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
+  const currencySymbol = CURRENCY_SYMBOL[i18n.language] ?? 'Rp';
 
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -69,9 +76,11 @@ export default function Produk() {
   const getCategoryName = (catId: number) => categories?.find(c => c.id === catId)?.name ?? '-';
   const getCategoryColor = (catId: number) => categories?.find(c => c.id === catId)?.color ?? '#999';
 
+  const rp = (n: number) => `${currencySymbol} ${n.toLocaleString(numberLocale)}`;
+
   const openAdd = () => {
     if (!categories || categories.length === 0) {
-      toast.error('Buat kategori terlebih dahulu sebelum menambah produk');
+      toast.error(t('toast.noCategory'));
       return;
     }
     setEditProduct(null);
@@ -89,14 +98,14 @@ export default function Produk() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      toast.error('File harus berupa gambar');
+      toast.error(t('toast.invalidImage'));
       return;
     }
     try {
       const compressed = await compressImage(file);
       setPhoto(compressed);
     } catch {
-      toast.error('Gagal memproses gambar');
+      toast.error(t('toast.processImageFailed'));
     }
     // Reset input so same file can be selected again
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -112,7 +121,7 @@ export default function Produk() {
       .filter(p => p.isDeleted === 0)
       .first();
     if (existing && existing.id !== editProduct?.id) {
-      toast.error(`SKU "${sku.trim()}" sudah digunakan oleh produk "${existing.name}"`);
+      toast.error(t('toast.skuExists', { sku: sku.trim(), name: existing.name }));
       return;
     }
 
@@ -165,12 +174,12 @@ export default function Produk() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <PackageIcon className="w-5 h-5 text-primary" />
-          Produk
+          {t('title')}
         </h1>
         {canManage && (
           <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
             <Plus className="w-4 h-4" />
-            Tambah
+            {t('addButton')}
           </Button>
         )}
       </div>
@@ -180,7 +189,7 @@ export default function Produk() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Cari produk..."
+            placeholder={t('searchPlaceholder')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-9 h-10"
@@ -188,10 +197,10 @@ export default function Produk() {
         </div>
         <Select value={filterCategory} onValueChange={setFilterCategory}>
           <SelectTrigger className="w-[120px] h-10">
-            <SelectValue placeholder="Kategori" />
+            <SelectValue placeholder={t('filterCategory')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Semua</SelectItem>
+            <SelectItem value="all">{t('filterAll')}</SelectItem>
             {categories?.map(c => (
               <SelectItem key={c.id} value={c.id!.toString()}>{c.icon} {c.name}</SelectItem>
             ))}
@@ -200,16 +209,16 @@ export default function Produk() {
       </div>
 
       {/* Product count */}
-      <p className="text-xs text-muted-foreground">{filtered.length} produk ditemukan</p>
+      <p className="text-xs text-muted-foreground">{t('productCount', { count: filtered.length })}</p>
 
       {/* Product List */}
       {filtered.length === 0 ? (
         <div className="text-center py-12">
           <PackageIcon className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">Belum ada produk</p>
+          <p className="text-sm text-muted-foreground">{t('empty.title')}</p>
           {canManage && (
             <Button variant="outline" size="sm" className="mt-3" onClick={openAdd}>
-              <Plus className="w-4 h-4 mr-1" /> Tambah Produk
+              <Plus className="w-4 h-4 mr-1" /> {t('empty.addButton')}
             </Button>
           )}
         </div>
@@ -234,25 +243,25 @@ export default function Produk() {
                         {getCategoryName(p.categoryId)}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">SKU: {p.sku || '-'}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t('card.sku')}: {p.sku || '-'}</p>
                     {p.description && (
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-line">
                         {p.description}
                       </p>
                     )}
                     <div className="flex items-center gap-3 mt-1.5">
-                      <span className="text-sm font-bold text-primary">Rp {p.price.toLocaleString('id-ID')}</span>
-                      <span className="text-xs text-muted-foreground">HPP: Rp {p.hpp.toLocaleString('id-ID')}</span>
+                      <span className="text-sm font-bold text-primary">{rp(p.price)}</span>
+                      <span className="text-xs text-muted-foreground">{t('card.hpp')}: {rp(p.hpp)}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       {isStockManaged(p) ? (
                         <span className={cn('text-xs font-medium px-1.5 py-0.5 rounded', p.stock <= 5 ? 'bg-destructive/10 text-destructive' : 'bg-success/10 text-success')}>
-                          Stok: {p.stock} {p.unit}
+                          {t('card.stock')}: {p.stock} {p.unit}
                         </span>
                       ) : (
                         <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary flex items-center gap-1">
                           <InfinityIcon className="w-3 h-3" />
-                          Stok tidak dikelola
+                          {t('card.stockUnmanaged')}
                         </span>
                       )}
                     </div>
@@ -280,19 +289,19 @@ export default function Produk() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editProduct ? 'Edit Produk' : 'Tambah Produk'}</DialogTitle>
+            <DialogTitle>{editProduct ? t('dialog.titleEdit') : t('dialog.titleAdd')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             {/* Photo picker */}
             <div className="space-y-1.5">
-              <Label>Foto Produk</Label>
+              <Label>{t('dialog.photoLabel')}</Label>
               <div className="flex items-center gap-3">
                 <div
                   className="w-20 h-20 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   {photo ? (
-                    <img src={photo} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={photo} alt={t('dialog.photoPreviewAlt')} className="w-full h-full object-cover" />
                   ) : (
                     <Camera className="w-6 h-6 text-muted-foreground/50" />
                   )}
@@ -306,7 +315,7 @@ export default function Produk() {
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <Camera className="w-3.5 h-3.5" />
-                    {photo ? 'Ganti Foto' : 'Pilih Foto'}
+                    {photo ? t('dialog.photoChange') : t('dialog.photoSelect')}
                   </Button>
                   {photo && (
                     <Button
@@ -317,7 +326,7 @@ export default function Produk() {
                       onClick={() => setPhoto(undefined)}
                     >
                       <X className="w-3.5 h-3.5" />
-                      Hapus Foto
+                      {t('dialog.photoRemove')}
                     </Button>
                   )}
                 </div>
@@ -332,19 +341,19 @@ export default function Produk() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Nama Produk *</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: Nasi Goreng" className="h-11" />
+              <Label>{t('dialog.nameLabel')} *</Label>
+              <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('dialog.namePlaceholder')} className="h-11" />
             </div>
             <div className="space-y-1.5">
-              <Label>SKU *</Label>
+              <Label>{t('dialog.skuLabel')} *</Label>
               <div className="flex gap-2">
-                <Input value={sku} onChange={e => setSku(e.target.value)} placeholder="Wajib diisi, contoh: NG001" className="h-11 flex-1" />
+                <Input value={sku} onChange={e => setSku(e.target.value)} placeholder={t('dialog.skuPlaceholder')} className="h-11 flex-1" />
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
                   className="h-11 w-11 shrink-0"
-                  title="Scan dengan kamera"
+                  title={t('dialog.scanCamera')}
                   onClick={() => setScanTarget('sku')}
                 >
                   <ScanLine className="w-4 h-4" />
@@ -352,35 +361,35 @@ export default function Produk() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Kategori *</Label>
+              <Label>{t('dialog.categoryLabel')} *</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger className="h-11"><SelectValue placeholder="Pilih kategori" /></SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue placeholder={t('dialog.categoryPlaceholder')} /></SelectTrigger>
                 <SelectContent>
                   {(categories && categories.length > 0) ? categories.map(c => (
                     <SelectItem key={c.id} value={c.id!.toString()}>{c.icon} {c.name}</SelectItem>
                   )) : (
-                    <SelectItem value="__empty" disabled>Belum ada kategori</SelectItem>
+                    <SelectItem value="__empty" disabled>{t('dialog.categoryEmpty')}</SelectItem>
                   )}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Harga Jual *</Label>
-                <Input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="15000" className="h-11" />
+                <Label>{t('dialog.priceLabel')} *</Label>
+                <Input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t('dialog.pricePlaceholder')} className="h-11" />
               </div>
               <div className="space-y-1.5">
-                <Label>HPP</Label>
-                <Input type="number" value={hpp} onChange={e => setHpp(e.target.value)} placeholder="10000" className="h-11" />
+                <Label>{t('dialog.hppLabel')}</Label>
+                <Input type="number" value={hpp} onChange={e => setHpp(e.target.value)} placeholder={t('dialog.hppPlaceholder')} className="h-11" />
               </div>
             </div>
             <div className="flex items-center justify-between rounded-xl border border-border p-3">
               <div className="space-y-0.5 pr-3">
-                <Label className="text-sm">Kelola Stok</Label>
+                <Label className="text-sm">{t('dialog.manageStockLabel')}</Label>
                 <p className="text-[11px] text-muted-foreground leading-snug">
                   {trackStock
-                    ? 'Stok dihitung otomatis & dibatasi saat jualan.'
-                    : 'Produk selalu tersedia, stok tidak dihitung (mis. jasa, makanan dadakan).'}
+                    ? t('dialog.stockEnabledHint')
+                    : t('dialog.stockDisabledHint')}
                 </p>
               </div>
               <Switch checked={trackStock} onCheckedChange={setTrackStock} />
@@ -388,12 +397,12 @@ export default function Produk() {
             <div className="grid grid-cols-2 gap-3">
               {trackStock && (
                 <div className="space-y-1.5">
-                  <Label>Stok Awal</Label>
-                  <Input type="number" value={stock} onChange={e => setStock(e.target.value)} placeholder="0" className="h-11" />
+                  <Label>{t('dialog.stockLabel')}</Label>
+                  <Input type="number" value={stock} onChange={e => setStock(e.target.value)} placeholder={t('dialog.stockPlaceholder')} className="h-11" />
                 </div>
               )}
               <div className={cn('space-y-1.5', !trackStock && 'col-span-2')}>
-                <Label>Satuan</Label>
+                <Label>{t('dialog.unitLabel')}</Label>
                 <Select value={unit} onValueChange={setUnit}>
                   <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -409,15 +418,15 @@ export default function Produk() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Barcode</Label>
+              <Label>{t('dialog.barcodeLabel')}</Label>
               <div className="flex gap-2">
-                <Input value={barcode} onChange={e => setBarcode(e.target.value)} placeholder="Opsional" className="h-11 flex-1" />
+                <Input value={barcode} onChange={e => setBarcode(e.target.value)} placeholder={t('dialog.barcodePlaceholder')} className="h-11 flex-1" />
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
                   className="h-11 w-11 shrink-0"
-                  title="Salin dari SKU"
+                  title={t('dialog.copyFromSku')}
                   onClick={() => setBarcode(sku.trim())}
                 >
                   <Copy className="w-4 h-4" />
@@ -427,7 +436,7 @@ export default function Produk() {
                   variant="outline"
                   size="icon"
                   className="h-11 w-11 shrink-0"
-                  title="Scan dengan kamera"
+                  title={t('dialog.scanCamera')}
                   onClick={() => setScanTarget('barcode')}
                 >
                   <ScanLine className="w-4 h-4" />
@@ -435,18 +444,18 @@ export default function Produk() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Deskripsi</Label>
+              <Label>{t('dialog.descriptionLabel')}</Label>
               <Textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                placeholder="Catatan/info tambahan, mis: isi 5 pcs, level pedas, supplier"
+                placeholder={t('dialog.descriptionPlaceholder')}
                 rows={3}
                 maxLength={500}
               />
-              <p className="text-[10px] text-muted-foreground text-right">{description.length}/500</p>
+              <p className="text-[10px] text-muted-foreground text-right">{description.length}{t('dialog.descriptionCounter')}</p>
             </div>
             <Button className="w-full h-12 text-base font-semibold" onClick={handleSave} disabled={!name.trim() || !categoryId || !sku.trim()}>
-              {editProduct ? 'Simpan Perubahan' : 'Tambah Produk'}
+              {editProduct ? t('saveButton.edit') : t('saveButton.add')}
             </Button>
           </div>
         </DialogContent>
@@ -456,12 +465,12 @@ export default function Produk() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Produk?</AlertDialogTitle>
-            <AlertDialogDescription>Produk yang dihapus tidak bisa dikembalikan.</AlertDialogDescription>
+            <AlertDialogTitle>{t('deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('deleteDialog.description')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Hapus</AlertDialogAction>
+            <AlertDialogCancel>{t('deleteDialog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">{t('deleteDialog.confirm')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

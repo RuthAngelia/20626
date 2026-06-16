@@ -16,7 +16,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
+import { id, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/use-auth';
 import { trackEvent } from '@/lib/analytics';
 import CustomerPicker from '@/components/CustomerPicker';
@@ -31,10 +33,35 @@ interface CartItem {
   notes?: string;
 }
 
+const CURRENCY_SYMBOL: Record<string, string> = {
+  id: 'Rp',
+  en: '$',
+  ms: 'RM',
+};
+
+const NUMBER_LOCALES: Record<string, string> = {
+  id: 'id-ID',
+  en: 'en-US',
+  ms: 'ms-MY',
+};
+
+const LOCALES: Record<string, Locale> = {
+  id,
+  en: enUS,
+  ms,
+};
+
 export default function Kasir() {
   const { currentUser, can } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation('settings');
+
+  const lang = i18n.language?.split('-')[0] || 'id';
+  const dateLocale = LOCALES[lang] || id;
+  const numberLocale = NUMBER_LOCALES[lang] || 'id-ID';
+  const currencySymbol = CURRENCY_SYMBOL[lang] || 'Rp';
+  const rp = (n: number) => `${currencySymbol} ${n.toLocaleString(numberLocale)}`;
 
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -114,7 +141,7 @@ export default function Kasir() {
       const existing = prev.find(c => c.product.id === product.id);
       if (existing) {
         if (isStockManaged(product) && existing.qty >= product.stock) {
-          toast.error('Stok tidak cukup');
+          toast.error(t('cashier.toast.stockLow'));
           return prev;
         }
         return prev.map(c => c.product.id === product.id ? { ...c, qty: c.qty + 1 } : c);
@@ -128,7 +155,7 @@ export default function Kasir() {
       if (c.product.id !== productId) return c;
       const newQty = c.qty + delta;
       if (newQty <= 0) return c;
-      if (isStockManaged(c.product) && newQty > c.product.stock) { toast.error('Stok tidak cukup'); return c; }
+      if (isStockManaged(c.product) && newQty > c.product.stock) { toast.error(t('cashier.toast.stockLow')); return c; }
       return { ...c, qty: newQty };
     }));
   };
@@ -213,7 +240,7 @@ export default function Kasir() {
   // === Open Bill Operations ===
 
   const saveOpenBill = async () => {
-    if (cart.length === 0) { toast.error('Keranjang kosong'); return; }
+    if (cart.length === 0) { toast.error(t('cashier.toast.cartEmpty')); return; }
 
     const now = new Date();
 
@@ -272,7 +299,7 @@ export default function Kasir() {
       }
 
       const updatedTx = await db.transactions.get(editingTxId);
-      toast.success(`Bill ${updatedTx?.receiptNumber} diperbarui!`);
+      toast.success(t('cashier.toast.billUpdated', { receiptNumber: updatedTx?.receiptNumber }));
     } else {
       const receiptNumber = `TX${Date.now()}`;
 
@@ -319,7 +346,7 @@ export default function Kasir() {
         await db.products.update(item.product.id!, { stock: item.product.stock - item.qty, updatedAt: new Date() });
       }
 
-      toast.success(`Bill ${receiptNumber} disimpan!`);
+      toast.success(t('cashier.toast.billSaved', { receiptNumber }));
     }
 
     doFullReset();
@@ -333,7 +360,7 @@ export default function Kasir() {
 
     const cartItems: CartItem[] = items.map(item => {
       const product = allProducts.find(p => p.id === item.productId);
-      if (!product) throw new Error(`Produk "${item.productName}" tidak ditemukan`);
+      if (!product) throw new Error(t('cashier.toast.productNotFoundLoadBill', { name: item.productName }));
       return {
         product,
         qty: item.quantity,
@@ -366,7 +393,7 @@ export default function Kasir() {
     }
     await db.transactionItems.where('transactionId').equals(tx.id).delete();
     await db.transactions.delete(tx.id);
-    toast.success(`Bill ${tx.receiptNumber} dibatalkan`);
+    toast.success(t('cashier.toast.billCancelled', { receiptNumber: tx.receiptNumber }));
     setCancelDialogOpen(false);
     setCancelTargetTx(null);
     if (editingTxId === tx.id) {
@@ -394,15 +421,15 @@ export default function Kasir() {
     if (useDebt) {
       if (!storeSettings?.allowDebt) return;
       if (!customerId) {
-        toast.error('Pilih pelanggan dari daftar untuk transaksi hutang');
+        toast.error(t('cashier.toast.selectCustomerForDebt'));
         return;
       }
       if (paidAmount < 0 || paidAmount > total) {
-        toast.error('Jumlah bayar harus antara Rp0 dan total transaksi');
+        toast.error(t('cashier.toast.paymentAmountRange', { symbol: currencySymbol }));
         return;
       }
       if (checkoutPaidAmount > 0 && !paymentMethodId) {
-        toast.error('Pilih metode untuk pembayaran awal');
+        toast.error(t('cashier.toast.selectPaymentMethod'));
         return;
       }
     } else if (!paymentMethodId || paidAmount < total) {
@@ -483,7 +510,7 @@ export default function Kasir() {
       }
 
       const updatedTx = await db.transactions.get(editingTxId);
-      toast.success(`Transaksi berhasil! ${updatedTx?.receiptNumber}`);
+      toast.success(t('cashier.toast.transactionSuccess', { receiptNumber: updatedTx?.receiptNumber }));
       trackEvent('create_transaction');
       setLastTransaction(updatedTx || null);
       setLastTxItems(itemRecords);
@@ -547,7 +574,7 @@ export default function Kasir() {
         await db.products.update(item.product.id!, { stock: item.product.stock - item.qty, updatedAt: new Date() });
       }
 
-      toast.success(`Transaksi berhasil! ${receiptNumber}`);
+      toast.success(t('cashier.toast.transactionSuccess', { receiptNumber }));
       trackEvent('create_transaction');
       setLastTransaction({ ...txData, id: txId as number });
       setLastTxItems(itemRecords);
@@ -567,13 +594,13 @@ export default function Kasir() {
     const product = products?.find(p => p.sku === barcode || p.barcode === barcode);
     if (product) {
       if (isStockManaged(product) && product.stock <= 0) {
-        toast.error(`Stok ${product.name} habis`);
+        toast.error(t('cashier.toast.productOutOfStock', { name: product.name }));
         return;
       }
       addToCart(product);
-      toast.success(`Ditambahkan: ${product.name}`);
+      toast.success(t('cashier.toast.addedToCart', { name: product.name }));
     } else {
-      toast.error(`Produk dengan SKU/Barcode "${barcode}" tidak ditemukan`);
+      toast.error(t('cashier.toast.productNotFound', { code: barcode }));
     }
   };
 
@@ -584,13 +611,13 @@ export default function Kasir() {
       const product = products?.find(p => p.sku === code || p.barcode === code);
       if (product) {
         if (isStockManaged(product) && product.stock <= 0) {
-          toast.error(`Stok ${product.name} habis`);
+          toast.error(t('cashier.toast.productOutOfStock', { name: product.name }));
           return;
         }
         addToCart(product);
-        toast.success(`Ditambahkan: ${product.name}`);
+        toast.success(t('cashier.toast.addedToCart', { name: product.name }));
       } else {
-        toast.error(`Produk dengan SKU/Barcode "${code}" tidak ditemukan`);
+        toast.error(t('cashier.toast.productNotFound', { code }));
       }
     }
   };
@@ -610,12 +637,10 @@ export default function Kasir() {
     }
   }, [location, navigate]);
 
-  const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
-
   // After all hooks: if user can't create transactions, render the locked
   // placeholder instead of the kasir UI. Bottom nav stays visible.
   if (!allowed) {
-    return <LockedPage title="Kasir" permissionLabel="Buat Transaksi" />;
+    return <LockedPage title={t('cashier.locked.title')} permissionLabel={t('cashier.locked.permissionLabel')} />;
   }
 
   return (
@@ -626,10 +651,10 @@ export default function Kasir() {
       <div className="flex items-center justify-between mb-4 pt-1">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <ShoppingCart className="w-5 h-5 text-primary" />
-          Kasir
+          {t('cashier.title')}
           {editingTxId && (
             <Badge variant="secondary" className="text-[10px] font-normal">
-              Editing Bill
+              {t('cashier.editingBill')}
             </Badge>
           )}
         </h1>
@@ -640,7 +665,7 @@ export default function Kasir() {
           onClick={() => setOpenBillsOpen(true)}
         >
           <ClipboardList className="w-4 h-4" />
-          Open Bill{openBillsCount > 0 && ` (${openBillsCount})`}
+          {t('cashier.openBill')}{openBillsCount > 0 && ` (${openBillsCount})`}
         </Button>
       </div>
 
@@ -648,7 +673,7 @@ export default function Kasir() {
       <div className="flex gap-2 mb-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Cari produk..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
+          <Input placeholder={t('cashier.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
         </div>
         <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setScannerOpen(true)}>
           <ScanBarcode className="w-5 h-5" />
@@ -661,7 +686,7 @@ export default function Kasir() {
           <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             ref={scanInputRef}
-            placeholder="Scan / ketik SKU atau Barcode lalu Enter..."
+            placeholder={t('cashier.scanPlaceholder')}
             value={scanInput}
             onChange={e => setScanInput(e.target.value)}
             onKeyDown={handleScanKeyDown}
@@ -673,7 +698,7 @@ export default function Kasir() {
       {/* Category chips */}
       <div className="flex gap-2 overflow-x-auto scrollbar-hide mb-3 pb-1 pr-4" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
         <button onClick={() => setFilterCategory('all')} className={cn('shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors', filterCategory === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
-          Semua
+          {t('cashier.categoryAll')}
         </button>
         {categories?.map(c => (
           <button key={c.id} onClick={() => setFilterCategory(c.id!.toString())} className={cn('shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors', filterCategory === c.id!.toString() ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground')}>
@@ -688,8 +713,8 @@ export default function Kasir() {
           <div className="text-center py-12">
             <p className="text-sm text-muted-foreground">
               {products && products.length > 0
-                ? 'Semua produk stoknya habis. Tambah stok dulu di menu Stok Masuk.'
-                : 'Belum ada produk. Tambah produk dulu di menu Produk.'}
+                ? t('cashier.empty.outOfStock')
+                : t('cashier.empty.noProducts')}
             </p>
           </div>
         ) : (
@@ -706,16 +731,16 @@ export default function Kasir() {
                   </div>
                   <div className="p-2.5">
                     <h3 className="text-xs font-semibold truncate">{p.name}</h3>
-                    <p className="text-sm font-bold text-primary mt-0.5">Rp {p.price.toLocaleString('id-ID')}</p>
+                    <p className="text-sm font-bold text-primary mt-0.5">{rp(p.price)}</p>
                     {p.description && (
                       <p className="text-[10px] text-muted-foreground mt-0.5 truncate" title={p.description}>
                         {p.description}
                       </p>
                     )}
                     {isStockManaged(p) ? (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Stok: {p.stock} {p.unit}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{t('cashier.productCard.stock', { stock: p.stock, unit: p.unit })}</p>
                     ) : (
-                      <p className="text-[10px] text-primary mt-0.5">Selalu tersedia</p>
+                      <p className="text-[10px] text-primary mt-0.5">{t('cashier.productCard.alwaysAvailable')}</p>
                     )}
                   </div>
                 </CardContent>
@@ -731,13 +756,13 @@ export default function Kasir() {
         <div className="p-4 border-b border-border shrink-0">
           <h3 className="text-base font-bold flex items-center gap-2">
             <ShoppingCart className="w-4 h-4 text-primary" />
-            Keranjang ({cartCount} item)
-            {editingTxId && <span className="text-xs font-normal text-muted-foreground">— edit</span>}
+            {t('cashier.cart.title', { count: cartCount })}
+            {editingTxId && <span className="text-xs font-normal text-muted-foreground">{t('cashier.cart.editLabel')}</span>}
           </h3>
         </div>
         {cart.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-8">
-            <p className="text-sm text-muted-foreground">Keranjang kosong</p>
+            <p className="text-sm text-muted-foreground">{t('cashier.cart.empty')}</p>
           </div>
         ) : (
           <div className="flex flex-col flex-1 overflow-hidden">
@@ -747,10 +772,10 @@ export default function Kasir() {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{item.product.name}</p>
-                      <p className="text-xs text-muted-foreground">Rp {item.product.price.toLocaleString('id-ID')} × {item.qty}</p>
+                      <p className="text-xs text-muted-foreground">{rp(item.product.price)} × {item.qty}</p>
                       {item.discountType && getItemDiscountAmount(item) > 0 && (
                         <p className="text-[10px] text-destructive">
-                          Diskon: {item.discountType === 'percentage' ? `${item.discountValue}%` : rp(item.discountValue)} (-{rp(getItemDiscountAmount(item))})
+                          {t('cashier.cartDiscount.label')}: {item.discountType === 'percentage' ? `${item.discountValue}%` : rp(item.discountValue)} (-{rp(getItemDiscountAmount(item))})
                         </p>
                       )}
                       <p className="text-sm font-bold text-primary">{rp(getItemSubtotal(item))}</p>
@@ -768,7 +793,7 @@ export default function Kasir() {
                           const val = parseInt(e.target.value);
                           if (!isNaN(val) && val >= 1) {
                             if (isStockManaged(item.product) && val > item.product.stock) {
-                              toast.error(`Stok tidak cukup, maksimal ${item.product.stock}`);
+                              toast.error(t('cashier.toast.stockLowWithMax', { max: item.product.stock }));
                               e.target.value = String(item.product.stock);
                               setCart(prev => prev.map(c => c.product.id === item.product.id ? { ...c, qty: item.product.stock } : c));
                             } else {
@@ -801,7 +826,7 @@ export default function Kasir() {
                         onClick={() => { setEditingItemNotes(item.product.id!); setTempItemNotes(''); }}
                       >
                         <Pencil className="w-2.5 h-2.5" />
-                        Tambah catatan
+                        {t('cashier.itemNotes.add')}
                       </button>
                     )}
                     {item.discountType ? (
@@ -810,7 +835,7 @@ export default function Kasir() {
                         onClick={() => openItemDiscount(item)}
                       >
                         <Tag className="w-2.5 h-2.5" />
-                        Ubah diskon
+                        {t('cashier.itemDiscount.change')}
                       </button>
                     ) : (
                       <button
@@ -818,7 +843,7 @@ export default function Kasir() {
                         onClick={() => openItemDiscount(item)}
                       >
                         <Tag className="w-2.5 h-2.5" />
-                        Tambah diskon
+                        {t('cashier.itemDiscount.add')}
                       </button>
                     )}
                   </div>
@@ -828,14 +853,14 @@ export default function Kasir() {
                         autoFocus
                         value={tempItemNotes}
                         onChange={e => setTempItemNotes(e.target.value)}
-                        placeholder="Contoh: less sugar..."
+                        placeholder={t('cashier.itemNotes.placeholder')}
                         className="h-8 text-xs"
                         onKeyDown={e => {
                           if (e.key === 'Enter') { updateItemNotes(item.product.id!, tempItemNotes); setEditingItemNotes(null); }
                           if (e.key === 'Escape') setEditingItemNotes(null);
                         }}
                       />
-                      <Button size="sm" className="h-8 text-xs" onClick={() => { updateItemNotes(item.product.id!, tempItemNotes); setEditingItemNotes(null); }}>OK</Button>
+                      <Button size="sm" className="h-8 text-xs" onClick={() => { updateItemNotes(item.product.id!, tempItemNotes); setEditingItemNotes(null); }}>{t('cashier.buttons.ok')}</Button>
                     </div>
                   )}
                 </div>
@@ -853,7 +878,7 @@ export default function Kasir() {
               <div className="relative flex-[0.6]">
                 <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Meja"
+                  placeholder={t('cashier.checkout.table')}
                   value={tableNumber}
                   onChange={e => setTableNumber(e.target.value)}
                   className="pl-8 h-9 text-xs"
@@ -868,8 +893,8 @@ export default function Kasir() {
                   className="flex items-center gap-1.5 text-xs text-destructive font-medium"
                 >
                   <Tag className="w-3.5 h-3.5" />
-                  Diskon: {txDiscountType === 'percentage' ? `${txDiscountValue}%` : `Rp ${Number(txDiscountValue).toLocaleString('id-ID')}`}
-                  <span className="text-[10px] underline ml-1">Ubah</span>
+                  {t('cashier.cartDiscount.label')}: {txDiscountType === 'percentage' ? `${txDiscountValue}%` : rp(Number(txDiscountValue))}
+                  <span className="text-[10px] underline ml-1">{t('cashier.cartDiscount.change')}</span>
                 </button>
               ) : (
                 <button
@@ -877,22 +902,22 @@ export default function Kasir() {
                   className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   <Tag className="w-3.5 h-3.5" />
-                  <span>Tambah Diskon</span>
+                  <span>{t('cashier.cartDiscount.add')}</span>
                 </button>
               )}
 
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-muted-foreground">{t('cashier.cartDiscount.subtotal')}</span>
                 <span className="font-medium">{rp(subtotal)}</span>
               </div>
               {txDiscountAmount > 0 && (
                 <div className="flex justify-between text-sm text-destructive">
-                  <span>Diskon</span>
+                  <span>{t('cashier.cartDiscount.discount')}</span>
                   <span>-{rp(txDiscountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
+                <span>{t('cashier.cartDiscount.total')}</span>
                 <span className="text-primary">{rp(total)}</span>
               </div>
 
@@ -904,14 +929,14 @@ export default function Kasir() {
                   disabled={cart.length === 0}
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  Simpan Bill
+                  {t('cashier.buttons.saveBill')}
                 </Button>
                 <Button
                   className="flex-1 h-12 text-sm font-semibold"
                   onClick={() => { setCheckoutOpen(true); setUseDebt(false); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Bayar
+                  {t('cashier.buttons.pay')}
                 </Button>
               </div>
 
@@ -922,7 +947,7 @@ export default function Kasir() {
                   onClick={handleCancelFromCart}
                 >
                   <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                  Batalkan Bill Ini
+                  {t('cashier.buttons.cancelBill')}
                 </Button>
               )}
             </div>
@@ -939,8 +964,8 @@ export default function Kasir() {
           style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <ShoppingCart className="w-5 h-5" />
-          <span className="font-bold text-sm">{cartCount} item</span>
-          <span className="text-sm font-bold">• Rp {total.toLocaleString('id-ID')}</span>
+          <span className="font-bold text-sm">{t('cashier.cart.title', { count: cartCount })}</span>
+          <span className="text-sm font-bold">• {rp(total)}</span>
         </button>
       )}
 
@@ -950,8 +975,8 @@ export default function Kasir() {
         <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl max-w-lg mx-auto">
           <SheetHeader>
             <SheetTitle className="text-left">
-              Keranjang ({cartCount} item)
-              {editingTxId && <span className="text-xs font-normal text-muted-foreground ml-2">— edit open bill</span>}
+              {t('cashier.cart.title', { count: cartCount })}
+              {editingTxId && <span className="text-xs font-normal text-muted-foreground ml-2">{t('cashier.cart.editOpenBillLabel')}</span>}
             </SheetTitle>
           </SheetHeader>
           <div className="flex flex-col h-full mt-4">
@@ -961,10 +986,10 @@ export default function Kasir() {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{item.product.name}</p>
-                      <p className="text-xs text-muted-foreground">Rp {item.product.price.toLocaleString('id-ID')} × {item.qty}</p>
+                      <p className="text-xs text-muted-foreground">{rp(item.product.price)} × {item.qty}</p>
                       {item.discountType && getItemDiscountAmount(item) > 0 && (
                         <p className="text-[10px] text-destructive">
-                          Diskon: {item.discountType === 'percentage' ? `${item.discountValue}%` : rp(item.discountValue)} (-{rp(getItemDiscountAmount(item))})
+                          {t('cashier.cartDiscount.label')}: {item.discountType === 'percentage' ? `${item.discountValue}%` : rp(item.discountValue)} (-{rp(getItemDiscountAmount(item))})
                         </p>
                       )}
                       <p className="text-sm font-bold text-primary">{rp(getItemSubtotal(item))}</p>
@@ -982,7 +1007,7 @@ export default function Kasir() {
                           const val = parseInt(e.target.value);
                           if (!isNaN(val) && val >= 1) {
                             if (isStockManaged(item.product) && val > item.product.stock) {
-                              toast.error(`Stok tidak cukup, maksimal ${item.product.stock}`);
+                              toast.error(t('cashier.toast.stockLowWithMax', { max: item.product.stock }));
                               e.target.value = String(item.product.stock);
                               setCart(prev => prev.map(c => c.product.id === item.product.id ? { ...c, qty: item.product.stock } : c));
                             } else {
@@ -1016,7 +1041,7 @@ export default function Kasir() {
                         onClick={() => { setEditingItemNotes(item.product.id!); setTempItemNotes(''); }}
                       >
                         <Pencil className="w-2.5 h-2.5" />
-                        Tambah catatan
+                        {t('cashier.itemNotes.add')}
                       </button>
                     )}
                     {item.discountType ? (
@@ -1025,7 +1050,7 @@ export default function Kasir() {
                         onClick={() => openItemDiscount(item)}
                       >
                         <Tag className="w-2.5 h-2.5" />
-                        Ubah diskon
+                        {t('cashier.itemDiscount.change')}
                       </button>
                     ) : (
                       <button
@@ -1033,7 +1058,7 @@ export default function Kasir() {
                         onClick={() => openItemDiscount(item)}
                       >
                         <Tag className="w-2.5 h-2.5" />
-                        Tambah diskon
+                        {t('cashier.itemDiscount.add')}
                       </button>
                     )}
                   </div>
@@ -1044,14 +1069,14 @@ export default function Kasir() {
                         autoFocus
                         value={tempItemNotes}
                         onChange={e => setTempItemNotes(e.target.value)}
-                        placeholder="Contoh: less sugar..."
+                        placeholder={t('cashier.itemNotes.placeholder')}
                         className="h-8 text-xs"
                         onKeyDown={e => {
                           if (e.key === 'Enter') { updateItemNotes(item.product.id!, tempItemNotes); setEditingItemNotes(null); }
                           if (e.key === 'Escape') setEditingItemNotes(null);
                         }}
                       />
-                      <Button size="sm" className="h-8 text-xs" onClick={() => { updateItemNotes(item.product.id!, tempItemNotes); setEditingItemNotes(null); }}>OK</Button>
+                      <Button size="sm" className="h-8 text-xs" onClick={() => { updateItemNotes(item.product.id!, tempItemNotes); setEditingItemNotes(null); }}>{t('cashier.buttons.ok')}</Button>
                     </div>
                   )}
                 </div>
@@ -1070,7 +1095,7 @@ export default function Kasir() {
               <div className="relative flex-[0.6]">
                 <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <Input
-                  placeholder="Meja"
+                  placeholder={t('cashier.checkout.table')}
                   value={tableNumber}
                   onChange={e => setTableNumber(e.target.value)}
                   className="pl-8 h-9 text-xs"
@@ -1086,8 +1111,8 @@ export default function Kasir() {
                   className="flex items-center gap-1.5 text-xs text-destructive font-medium"
                 >
                   <Tag className="w-3.5 h-3.5" />
-                  Diskon: {txDiscountType === 'percentage' ? `${txDiscountValue}%` : `Rp ${Number(txDiscountValue).toLocaleString('id-ID')}`}
-                  <span className="text-[10px] underline ml-1">Ubah</span>
+                  {t('cashier.cartDiscount.label')}: {txDiscountType === 'percentage' ? `${txDiscountValue}%` : rp(Number(txDiscountValue))}
+                  <span className="text-[10px] underline ml-1">{t('cashier.cartDiscount.change')}</span>
                 </button>
               ) : (
                 <button
@@ -1095,22 +1120,22 @@ export default function Kasir() {
                   className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   <Tag className="w-3.5 h-3.5" />
-                  <span>Tambah Diskon</span>
+                  <span>{t('cashier.cartDiscount.add')}</span>
                 </button>
               )}
 
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subtotal</span>
+                <span className="text-muted-foreground">{t('cashier.cartDiscount.subtotal')}</span>
                 <span className="font-medium">{rp(subtotal)}</span>
               </div>
               {txDiscountAmount > 0 && (
                 <div className="flex justify-between text-sm text-destructive">
-                  <span>Diskon</span>
+                  <span>{t('cashier.cartDiscount.discount')}</span>
                   <span>-{rp(txDiscountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
+                <span>{t('cashier.cartDiscount.total')}</span>
                 <span className="text-primary">{rp(total)}</span>
               </div>
 
@@ -1123,14 +1148,14 @@ export default function Kasir() {
                   disabled={cart.length === 0}
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  Simpan Bill
+                  {t('cashier.buttons.saveBill')}
                 </Button>
                 <Button
                   className="flex-1 h-12 text-sm font-semibold"
                   onClick={() => { setCheckoutOpen(true); setUseDebt(false); setPaymentMethodId(paymentMethods?.[0]?.id?.toString() ?? ''); setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Bayar
+                  {t('cashier.buttons.pay')}
                 </Button>
               </div>
 
@@ -1141,7 +1166,7 @@ export default function Kasir() {
                   onClick={handleCancelFromCart}
                 >
                   <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                  Batalkan Bill Ini
+                  {t('cashier.buttons.cancelBill')}
                 </Button>
               )}
             </div>
@@ -1156,14 +1181,14 @@ export default function Kasir() {
           <SheetHeader>
             <SheetTitle className="text-left flex items-center gap-2">
               <ClipboardList className="w-4 h-4 text-primary" />
-              Open Bills ({openBillsCount})
+              {t('cashier.openBillsSheet.title', { count: openBillsCount })}
             </SheetTitle>
           </SheetHeader>
           <div className="mt-4 flex-1 min-h-0 overflow-y-auto pb-6 space-y-2">
             {!openBills || openBills.length === 0 ? (
               <div className="text-center py-12">
                 <ClipboardList className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Tidak ada open bill</p>
+                <p className="text-sm text-muted-foreground">{t('cashier.openBillsSheet.empty')}</p>
               </div>
             ) : (
               openBills.map(bill => (
@@ -1173,19 +1198,19 @@ export default function Kasir() {
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary" className="text-[10px]">{bill.receiptNumber}</Badge>
                         <span className="text-[10px] text-muted-foreground">
-                          {bill.openedAt ? format(new Date(bill.openedAt), 'dd/MM HH:mm', { locale: localeId }) : ''}
+                          {bill.openedAt ? format(new Date(bill.openedAt), 'dd/MM HH:mm', { locale: dateLocale }) : ''}
                         </span>
                       </div>
                       <span className="text-sm font-bold text-primary">{rp(bill.total)}</span>
                     </div>
                     <div className="flex gap-1.5 text-[10px] text-muted-foreground mb-2">
                       {bill.customerName && <span>👤 {bill.customerName}</span>}
-                      {bill.tableNumber && <span>🪑 Meja {bill.tableNumber}</span>}
+                      {bill.tableNumber && <span>🪑 {t('cashier.openBillsSheet.tablePrefix', { number: bill.tableNumber })}</span>}
                       {bill.remarks && <span className="truncate max-w-[120px]">📝 {bill.remarks}</span>}
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" className="h-8 text-xs flex-1" onClick={() => loadOpenBill(bill)}>
-                        Lanjutkan
+                        {t('cashier.openBillsSheet.continue')}
                       </Button>
                       {can('delete_transaction') && (
                         <Button
@@ -1194,7 +1219,7 @@ export default function Kasir() {
                           className="h-8 text-xs text-destructive border-destructive/30"
                           onClick={() => handleCancelFromList(bill)}
                         >
-                          Batal
+                          {t('cashier.openBillsSheet.cancel')}
                         </Button>
                       )}
                     </div>
@@ -1210,19 +1235,19 @@ export default function Kasir() {
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl">
           <DialogHeader>
-            <DialogTitle>Pembayaran</DialogTitle>
+            <DialogTitle>{t('cashier.checkout.title')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="text-center py-3 bg-primary/5 rounded-xl">
-              <p className="text-sm text-muted-foreground">Total Bayar</p>
+              <p className="text-sm text-muted-foreground">{t('cashier.checkout.totalLabel')}</p>
               <p className="text-3xl font-bold text-primary">{rp(total)}</p>
             </div>
 
             {storeSettings?.allowDebt && (
               <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
                 <div>
-                  <p className="text-sm font-semibold">Bayar dengan hutang</p>
-                  <p className="text-[10px] text-muted-foreground">Pembayaran boleh sebagian atau seluruhnya hutang</p>
+                  <p className="text-sm font-semibold">{t('cashier.checkout.debtLabel')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t('cashier.checkout.debtDesc')}</p>
                 </div>
                 <Switch
                   checked={useDebt}
@@ -1236,7 +1261,7 @@ export default function Kasir() {
             )}
 
             <div className="space-y-1.5">
-              <p className="text-sm font-medium">Metode Pembayaran</p>
+              <p className="text-sm font-medium">{t('cashier.checkout.paymentMethod')}</p>
               <div className="grid grid-cols-3 gap-2">
                 {paymentMethods?.map(pm => (
                   <button key={pm.id} onClick={() => setPaymentMethodId(pm.id!.toString())} className={cn('p-3 rounded-xl text-xs font-semibold border-2 transition-colors', paymentMethodId === pm.id!.toString() ? 'border-primary bg-primary/5 text-primary' : 'border-muted bg-muted/50 text-muted-foreground')}>
@@ -1247,13 +1272,13 @@ export default function Kasir() {
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-sm font-medium">{useDebt ? 'Pembayaran Awal' : 'Jumlah Bayar'}</p>
+              <p className="text-sm font-medium">{useDebt ? t('cashier.checkout.amountLabel.debt') : t('cashier.checkout.amountLabel.full')}</p>
               <Input
                 type="number"
                 inputMode="numeric"
                 value={paymentAmount === '0' ? '' : paymentAmount}
                 onChange={e => { setPaymentAmount(e.target.value || '0'); setIsQuickAdding(true); }}
-                placeholder="Masukkan jumlah bayar..."
+                placeholder={t('cashier.checkout.amountPlaceholder')}
                 className="h-12 text-lg font-bold text-center"
               />
               <div className="flex flex-wrap gap-1.5">
@@ -1277,14 +1302,14 @@ export default function Kasir() {
                   onClick={() => { setPaymentAmount(total.toString()); setIsQuickAdding(false); }}
                   className="flex-1 min-w-[calc(25%-6px)] h-9 rounded-lg border border-primary/30 bg-primary/5 text-xs font-semibold text-primary hover:bg-primary/10 active:scale-95 transition-all"
                 >
-                  Uang Pas
+                  {t('cashier.checkout.exactMoney')}
                 </button>
               </div>
               <button
                 onClick={() => { setPaymentAmount('0'); setIsQuickAdding(false); }}
                 className="w-full text-xs text-muted-foreground hover:text-destructive transition-colors py-1"
               >
-                Reset
+                {t('cashier.checkout.reset')}
               </button>
             </div>
 
@@ -1300,7 +1325,7 @@ export default function Kasir() {
                 <div className="relative flex-[0.7]">
                   <Hash className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Meja"
+                    placeholder={t('cashier.checkout.table')}
                     value={tableNumber}
                     onChange={e => setTableNumber(e.target.value)}
                     className="pl-8 h-10 text-sm"
@@ -1308,7 +1333,7 @@ export default function Kasir() {
                 </div>
               </div>
               <Input
-                placeholder="Catatan tambahan (opsional)"
+                placeholder={t('cashier.checkout.notes')}
                 value={remarks}
                 onChange={e => setRemarks(e.target.value)}
                 className="h-10"
@@ -1318,8 +1343,8 @@ export default function Kasir() {
             {useDebt && debtAmount > 0 && (
               <div className="flex justify-between items-center bg-warning/10 p-3 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium">Sisa Hutang</p>
-                  <p className="text-[10px] text-muted-foreground">Pelanggan wajib dipilih dari daftar</p>
+                  <p className="text-sm font-medium">{t('cashier.checkout.remainingDebt')}</p>
+                  <p className="text-[10px] text-muted-foreground">{t('cashier.checkout.remainingDebtHint')}</p>
                 </div>
                 <span className="text-lg font-bold text-warning">{rp(debtAmount)}</span>
               </div>
@@ -1327,8 +1352,8 @@ export default function Kasir() {
 
             {paidAmount >= total && (
               <div className="flex justify-between items-center bg-success/10 p-3 rounded-xl">
-                <span className="text-sm font-medium">Kembalian</span>
-                <span className="text-lg font-bold text-success">Rp {change.toLocaleString('id-ID')}</span>
+                <span className="text-sm font-medium">{t('cashier.checkout.changeLabel')}</span>
+                <span className="text-lg font-bold text-success">{rp(change)}</span>
               </div>
             )}
 
@@ -1342,7 +1367,7 @@ export default function Kasir() {
               }
             >
               <Check className="w-5 h-5 mr-2" />
-              Konfirmasi Transaksi
+              {t('cashier.checkout.confirmButton')}
             </Button>
           </div>
         </DialogContent>
@@ -1352,39 +1377,39 @@ export default function Kasir() {
       <Dialog open={discountDialogOpen} onOpenChange={setDiscountDialogOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl">
           <DialogHeader>
-            <DialogTitle>Diskon Transaksi</DialogTitle>
+            <DialogTitle>{t('cashier.discountDialog.title')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <p className="text-sm font-medium">Jenis Diskon</p>
+              <p className="text-sm font-medium">{t('cashier.discountDialog.typeLabel')}</p>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setTempDiscountType('nominal')}
                   className={cn('p-3 rounded-xl text-sm font-semibold border-2 transition-colors', tempDiscountType === 'nominal' ? 'border-primary bg-primary/5 text-primary' : 'border-muted bg-muted/50 text-muted-foreground')}
                 >
-                  Nominal (Rp)
+                  {t('cashier.discountDialog.type.nominal', { symbol: currencySymbol })}
                 </button>
                 <button
                   onClick={() => setTempDiscountType('percentage')}
                   className={cn('p-3 rounded-xl text-sm font-semibold border-2 transition-colors', tempDiscountType === 'percentage' ? 'border-primary bg-primary/5 text-primary' : 'border-muted bg-muted/50 text-muted-foreground')}
                 >
-                  Persen (%)
+                  {t('cashier.discountDialog.type.percentage')}
                 </button>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-sm font-medium">{tempDiscountType === 'percentage' ? 'Persentase Diskon' : 'Jumlah Diskon'}</p>
+              <p className="text-sm font-medium">{tempDiscountType === 'percentage' ? t('cashier.discountDialog.amountLabel.percentage') : t('cashier.discountDialog.amountLabel.nominal')}</p>
               <Input
                 type="number"
                 value={tempDiscountValue}
                 onChange={e => setTempDiscountValue(e.target.value)}
-                placeholder={tempDiscountType === 'percentage' ? 'Contoh: 10' : 'Contoh: 5000'}
+                placeholder={tempDiscountType === 'percentage' ? t('cashier.discountDialog.placeholder.percentage') : t('cashier.discountDialog.placeholder.nominal')}
                 className="h-12 text-lg font-bold text-center"
               />
               {tempDiscountType === 'percentage' && Number(tempDiscountValue) > 0 && (
                 <p className="text-xs text-muted-foreground text-center">
-                  = Rp {(subtotal * Number(tempDiscountValue) / 100).toLocaleString('id-ID')} dari Rp {subtotal.toLocaleString('id-ID')}
+                  {t('cashier.discountDialog.percentPreview', { symbol: currencySymbol, amount: (subtotal * Number(tempDiscountValue) / 100).toLocaleString(numberLocale), subtotal: subtotal.toLocaleString(numberLocale) })}
                 </p>
               )}
             </div>
@@ -1396,7 +1421,7 @@ export default function Kasir() {
                   setTxDiscountValue('');
                   setDiscountDialogOpen(false);
                 }}>
-                  Hapus
+                  {t('cashier.discountDialog.delete')}
                 </Button>
               )}
               <Button className="flex-1 h-11 font-semibold" onClick={() => {
@@ -1409,7 +1434,7 @@ export default function Kasir() {
                 }
                 setDiscountDialogOpen(false);
               }}>
-                Simpan Diskon
+                {t('cashier.discountDialog.save')}
               </Button>
             </div>
           </div>
@@ -1420,7 +1445,7 @@ export default function Kasir() {
       <Dialog open={itemDiscountTargetId !== null} onOpenChange={(open) => { if (!open) setItemDiscountTargetId(null); }}>
         <DialogContent className="max-w-[95vw] rounded-xl">
           <DialogHeader>
-            <DialogTitle>Diskon Item</DialogTitle>
+            <DialogTitle>{t('cashier.itemDiscountDialog.title')}</DialogTitle>
           </DialogHeader>
           {(() => {
             const target = cart.find(c => c.product.id === itemDiscountTargetId);
@@ -1434,47 +1459,47 @@ export default function Kasir() {
             return (
               <div className="space-y-4 mt-2">
                 <div className="bg-muted/50 rounded-xl p-3">
-                  <p className="text-xs text-muted-foreground">Item</p>
+                  <p className="text-xs text-muted-foreground">{t('cashier.itemDiscountDialog.itemLabel')}</p>
                   <p className="text-sm font-semibold">{target.product.name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Rp {target.product.price.toLocaleString('id-ID')} × {target.qty} = {rp(base)}
+                    {rp(target.product.price)} × {target.qty} = {rp(base)}
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <p className="text-sm font-medium">Jenis Diskon</p>
+                  <p className="text-sm font-medium">{t('cashier.itemDiscountDialog.typeLabel')}</p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => setItemDiscountType('nominal')}
                       className={cn('p-3 rounded-xl text-sm font-semibold border-2 transition-colors', itemDiscountType === 'nominal' ? 'border-primary bg-primary/5 text-primary' : 'border-muted bg-muted/50 text-muted-foreground')}
                     >
-                      Nominal (Rp)
+                      {t('cashier.itemDiscountDialog.type.nominal', { symbol: currencySymbol })}
                     </button>
                     <button
                       onClick={() => setItemDiscountType('percentage')}
                       className={cn('p-3 rounded-xl text-sm font-semibold border-2 transition-colors', itemDiscountType === 'percentage' ? 'border-primary bg-primary/5 text-primary' : 'border-muted bg-muted/50 text-muted-foreground')}
                     >
-                      Persen (%)
+                      {t('cashier.itemDiscountDialog.type.percentage')}
                     </button>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <p className="text-sm font-medium">{itemDiscountType === 'percentage' ? 'Persentase Diskon' : 'Jumlah Diskon'}</p>
+                  <p className="text-sm font-medium">{itemDiscountType === 'percentage' ? t('cashier.itemDiscountDialog.amountLabel.percentage') : t('cashier.itemDiscountDialog.amountLabel.nominal')}</p>
                   <Input
                     type="number"
                     inputMode="decimal"
                     value={itemDiscountValue}
                     onChange={e => setItemDiscountValue(e.target.value)}
-                    placeholder={itemDiscountType === 'percentage' ? 'Contoh: 10' : 'Contoh: 5000'}
+                    placeholder={itemDiscountType === 'percentage' ? t('cashier.itemDiscountDialog.placeholder.percentage') : t('cashier.itemDiscountDialog.placeholder.nominal')}
                     className="h-12 text-lg font-bold text-center"
                     autoFocus
                   />
                   {rawValue > 0 && (
                     <p className={cn('text-xs text-center', exceedsCap ? 'text-destructive' : 'text-muted-foreground')}>
                       {exceedsCap
-                        ? `Dibatasi otomatis ke ${itemDiscountType === 'percentage' ? '100%' : rp(base)}`
-                        : `Diskon: -${rp(previewAmount)} → subtotal ${rp(Math.max(0, base - previewAmount))}`}
+                        ? t('cashier.itemDiscountDialog.cappedPreview.exceeds', { cap: itemDiscountType === 'percentage' ? '100%' : rp(base) })
+                        : t('cashier.itemDiscountDialog.cappedPreview.normal', { amount: rp(previewAmount), subtotal: rp(Math.max(0, base - previewAmount)) })}
                     </p>
                   )}
                 </div>
@@ -1486,11 +1511,11 @@ export default function Kasir() {
                       className="h-11 text-destructive border-destructive/30"
                       onClick={clearItemDiscount}
                     >
-                      Hapus
+                      {t('cashier.itemDiscountDialog.delete')}
                     </Button>
                   )}
                   <Button className="flex-1 h-11 font-semibold" onClick={saveItemDiscount}>
-                    Simpan Diskon
+                    {t('cashier.itemDiscountDialog.save')}
                   </Button>
                 </div>
               </div>
@@ -1510,9 +1535,9 @@ export default function Kasir() {
           paymentMethodName={
             lastTransaction.debtAmount
               ? (lastTransaction.paymentAmount > 0
-                  ? `${paymentMethods?.find(pm => pm.id === lastTransaction.paymentMethodId)?.name || 'Pembayaran awal'} + Hutang`
-                  : 'Hutang')
-              : paymentMethods?.find(pm => pm.id === lastTransaction.paymentMethodId)?.name || 'Tunai'
+                  ? `${paymentMethods?.find(pm => pm.id === lastTransaction.paymentMethodId)?.name || t('cashier.paymentMethod.initialPayment')} + ${t('cashier.paymentMethod.debt')}`
+                  : t('cashier.paymentMethod.debt'))
+              : paymentMethods?.find(pm => pm.id === lastTransaction.paymentMethodId)?.name || t('cashier.paymentMethod.cash')
           }
           cashierName={lastTransaction.createdBy ? allUsers?.find(u => u.id === lastTransaction.createdBy)?.name : undefined}
         />
@@ -1529,18 +1554,18 @@ export default function Kasir() {
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Batalkan Bill?</AlertDialogTitle>
+            <AlertDialogTitle>{t('cashier.cancelDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Bill ini akan dihapus dan stok produk akan dikembalikan.
+              {t('cashier.cancelDialog.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCancelTargetTx(null)}>Tidak</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setCancelTargetTx(null)}>{t('cashier.cancelDialog.no')}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => cancelTargetTx && cancelOpenBill(cancelTargetTx)}
             >
-              Batalkan Bill
+              {t('cashier.cancelDialog.yes')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

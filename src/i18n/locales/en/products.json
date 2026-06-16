@@ -1,0 +1,89 @@
+{
+  "title": "Products",
+  "addButton": "Add",
+  "searchPlaceholder": "Search products...",
+  "filterCategory": "Category",
+  "filterAll": "All",
+  "productCount_zero": "No products found",
+  "productCount_one": "1 product found",
+  "productCount_other": "{{count}} products found",
+  "empty": {
+    "title": "No products yet",
+    "addButton": "Add Product"
+  },
+  "card": {
+    "sku": "SKU",
+    "hpp": "COGS",
+    "stock": "Stock",
+    "stockUnmanaged": "Stock not managed"
+  },
+  "dialog": {
+    "titleEdit": "Edit Product",
+    "titleAdd": "Add Product",
+    "photoLabel": "Product Photo",
+    "photoPreviewAlt": "Preview",
+    "photoChange": "Change Photo",
+    "photoSelect": "Select Photo",
+    "photoRemove": "Remove Photo",
+    "nameLabel": "Product Name",
+    "namePlaceholder": "e.g. Fried Rice",
+    "skuLabel": "SKU",
+    "scanCamera": "Scan via camera",
+    "categoryLabel": "Category",
+    "categoryPlaceholder": "Select category",
+    "categoryEmpty": "No categories yet",
+    "priceLabel": "Selling Price",
+    "pricePlaceholder": "15000",
+    "hppLabel": "COGS",
+    "hppPlaceholder": "10000",
+    "stockLabel": "Initial Stock",
+    "stockPlaceholder": "0",
+    "manageStockLabel": "Manage Stock",
+    "stockEnabledHint": "Stock is tracked automatically & limited during checkout.",
+    "stockDisabledHint": "Product always available, stock is not tracked (e.g. services, made-to-order items).",
+    "unitLabel": "Unit",
+    "barcodeLabel": "Barcode",
+    "barcodePlaceholder": "Optional",
+    "copyFromSku": "Copy from SKU",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Additional notes/info, e.g.: contains 5 pcs, spice level, supplier",
+    "descriptionCounter": "/500"
+  },
+  "saveButton": {
+    "edit": "Save Changes",
+    "add": "Add Product"
+  },
+  "deleteDialog": {
+    "title": "Delete Product?",
+    "description": "Deleted products cannot be restored.",
+    "cancel": "Cancel",
+    "confirm": "Delete"
+  },
+  "toast": {
+    "noCategory": "Create a category first before adding products",
+    "invalidImage": "File must be an image",
+    "processImageFailed": "Failed to process image",
+    "skuExists": "SKU \"{{sku}}\" is already used by product \"{{name}}\""
+  },
+  "barcodeScanner": {
+    "title": "Scan Barcode",
+    "cameraError": "Failed to start camera.",
+    "permissionTip": "Tip: After changing permissions in Settings, reopen the app.",
+    "requestingPermission": "Requesting camera permission...",
+    "scanHint": "Point the barcode inside the scan box",
+    "cancel": "Cancel",
+    "close": "Close",
+    "flashUnsupported": "Flash is not supported on this device",
+    "httpsRequired": "The app must be accessed via HTTPS to use the camera.",
+    "browserUnsupported": "Browser does not support camera access. Try updating the app or use another browser.",
+    "permissionDeniedNative": "Camera permission denied. Go to device Settings > Apps > FreeKasir > Permissions, then enable Camera.",
+    "permissionDeniedWeb": "Camera permission denied. Click the lock icon in the address bar and allow camera access.",
+    "permissionDeniedGeneric": "Camera permission denied. Please allow camera access and try again.",
+    "noCamera": "No camera found on this device.",
+    "cameraInUse": "Camera is being used by another app. Close other apps and try again.",
+    "cameraConfigUnsupported": "Camera does not support the requested configuration.",
+    "securityBlocked": "Camera access blocked for security reasons. Make sure the app is accessed via HTTPS.",
+    "accessFailed": "Failed to access camera ({{name}}).",
+    "startFailed": "Failed to start scanner ({{name}}). Try closing and reopening."
+  }
+}

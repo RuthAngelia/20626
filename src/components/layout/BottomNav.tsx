@@ -1,20 +1,23 @@
 import { Home, Package, BarChart3, Settings, ShoppingCart } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const navItems = [
-  { to: '/', icon: Home, label: 'Beranda' },
-  { to: '/products', icon: Package, label: 'Produk' },
-  { to: '/cashier', icon: ShoppingCart, label: 'Kasir', isCta: true },
-  { to: '/reports', icon: BarChart3, label: 'Laporan' },
-  { to: '/settings', icon: Settings, label: 'Lainnya' },
+  { to: '/', icon: Home, key: 'nav.home' as const },
+  { to: '/products', icon: Package, key: 'nav.products' as const },
+  { to: '/cashier', icon: ShoppingCart, key: 'nav.cashier' as const, isCta: true },
+  { to: '/reports', icon: BarChart3, key: 'nav.reports' as const },
+  { to: '/settings', icon: Settings, key: 'nav.more' as const },
 ];
 
 export default function BottomNav() {
+  const { t } = useTranslation('common');
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-end justify-around h-16 max-w-lg md:max-w-6xl mx-auto px-2 md:px-4">
-        {navItems.map(({ to, icon: Icon, label, isCta }) => (
+        {navItems.map(({ to, icon: Icon, key, isCta }) => (
           <NavLink
             key={to}
             to={to}
@@ -46,7 +49,7 @@ export default function BottomNav() {
                   <span className={cn(
                     'text-[10px] font-bold leading-tight mt-0.5',
                     isActive ? 'text-primary' : 'text-muted-foreground'
-                  )}>{label}</span>
+                  )}>{t(key)}</span>
                 </>
               ) : (
                 <>
@@ -56,7 +59,7 @@ export default function BottomNav() {
                   )}>
                     <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
                   </div>
-                  <span className="text-[10px] font-semibold leading-tight">{label}</span>
+                  <span className="text-[10px] font-semibold leading-tight">{t(key)}</span>
                 </>
               )
             }

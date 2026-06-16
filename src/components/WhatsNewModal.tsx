@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -9,7 +10,10 @@ import {
   markFeaturesSeen,
 } from '@/lib/whats-new';
 import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { id as idLocale, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
+
+const LOCALES: Record<string, Locale> = { id: idLocale, en: enUS, ms };
 
 interface WhatsNewModalProps {
   open: boolean;
@@ -29,6 +33,8 @@ export default function WhatsNewModal({
   markSeenOnClose = true,
 }: WhatsNewModalProps) {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation('common');
+  const dateLocale = LOCALES[i18n.language] ?? idLocale;
   const [index, setIndex] = useState(0);
 
   // Reset to first slide whenever the modal is reopened or the list changes.
@@ -83,7 +89,7 @@ export default function WhatsNewModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Sparkles className="w-4 h-4 text-primary" />
-            Yang Baru di FreeKasir
+            {t('whatsNew.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -100,7 +106,7 @@ export default function WhatsNewModal({
             </div>
             <div className="space-y-1.5">
               <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                {format(new Date(current.publishedAt), 'd MMMM yyyy', { locale: idLocale })}
+                {format(new Date(current.publishedAt), 'd MMMM yyyy', { locale: dateLocale })}
               </p>
               <h3 className="text-lg font-bold tracking-tight">{current.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -120,7 +126,7 @@ export default function WhatsNewModal({
                     'h-1.5 rounded-full transition-all',
                     i === safeIndex ? 'w-6 bg-primary' : 'w-1.5 bg-muted-foreground/25',
                   )}
-                  aria-label={`Slide ${i + 1}`}
+                  aria-label={t('whatsNew.slide', { number: i + 1 })}
                 />
               ))}
             </div>
@@ -146,7 +152,7 @@ export default function WhatsNewModal({
               </Button>
             ) : isLast ? (
               <Button onClick={handleClose} className="flex-1 h-11 text-sm font-semibold">
-                Selesai
+                {t('whatsNew.finish')}
               </Button>
             ) : (
               <Button
@@ -154,7 +160,7 @@ export default function WhatsNewModal({
                 onClick={handleClose}
                 className="flex-1 h-11 text-sm text-muted-foreground"
               >
-                Lewati
+                {t('whatsNew.skip')}
               </Button>
             )}
 

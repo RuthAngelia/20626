@@ -1,0 +1,1252 @@
+{
+  "title": "Settings",
+  "storeFallback": "My Store",
+  "notSet": "Not set",
+  "cloudSync": {
+    "title": "Cloud Sync",
+    "status": {
+      "inactive": "INACTIVE",
+      "selectStore": "SELECT STORE",
+      "needsSetup": "NEEDS SETUP",
+      "active": "ACTIVE"
+    },
+    "desc": {
+      "inactive": "Activate Cloud Sync to monitor store reports in real-time on dashboard.freekasir.com — access from any device, data is safe even if the device is lost or replaced.",
+      "selectStore": "Subscription is active, but the device hasn't been linked to a store. Select a store to sync data.",
+      "needsSetup": "Store is linked, but automatic sync isn't enabled yet. Set up a schedule so data syncs regularly.",
+      "active": "Sync is active. Monitor store reports in real-time on dashboard.freekasir.com from any device."
+    },
+    "lastSync": "Last sync: {{time}}",
+    "neverSynced": "Never synced"
+  },
+  "installApp": {
+    "title": "Install as App",
+    "hint": "Open directly from home screen, no browser needed",
+    "installButton": "Install",
+    "installSuccess": "FreeKasir installed successfully!",
+    "helpButton": "How to Install"
+  },
+  "installHelp": {
+    "title": "How to Install the App",
+    "description": "Your browser doesn't show the automatic install button. Follow the steps below for your device.",
+    "iosStep1": "Open this app in <strong>Safari</strong> browser (not Chrome).",
+    "iosStep2": "Tap the <0 /> <strong>Share</strong> button at the bottom of the screen.",
+    "iosStep3": "Select <strong>\"Add to Home Screen\"</strong>, then tap <strong>Add</strong>.",
+    "androidStep1": "Open this app in <strong>Chrome</strong> or <strong>Edge</strong> browser.",
+    "androidStep2": "Tap the <strong>(⋮)</strong> menu in the top-right corner of the browser.",
+    "androidStep3": "Select <strong>\"Install app\"</strong> or <strong>\"Add to Home screen\"</strong>.",
+    "troubleshoot": "If the option doesn't appear, refresh the page first and try again. Some browsers need a second visit before offering to install."
+  },
+  "employees": {
+    "sectionTitle": "Employees & Access",
+    "owner": "Owner",
+    "staff": "Staff",
+    "logout": "Logout",
+    "activate": {
+      "title": "Activate Multi-User",
+      "description": "Create employee accounts with limited access. Your data stays secure.",
+      "button": "Activate"
+    },
+    "manage": {
+      "title": "Manage Employees",
+      "description": "{{count}} registered accounts · manage access per employee"
+    },
+    "active": {
+      "title": "Multi-User Active",
+      "description": "Staff must login to access the cashier",
+      "disable": "Disable"
+    },
+    "activateDialog": {
+      "title": "Activate Multi-User",
+      "description": "Create an owner account. After activation, you'll need to login with this username & PIN every time you open the app. Your store data stays intact.",
+      "nameLabel": "Your Name",
+      "namePlaceholder": "e.g. John Doe",
+      "usernameLabel": "Username",
+      "usernamePlaceholder": "e.g. owner",
+      "usernameHint": "3-20 characters, letters/numbers/underscore. Cannot be changed.",
+      "pinLabel": "PIN",
+      "pinPlaceholder": "4-6 digit number",
+      "pinConfirmLabel": "Confirm PIN",
+      "pinConfirmPlaceholder": "Re-enter PIN",
+      "warningTitle": "Important:",
+      "warningText": "Keep your username & PIN safe. If you forget, the only way to reset is by clearing app data (store data will also be deleted). Make sure you have a backup.",
+      "submitting": "Activating…",
+      "submit": "Activate Multi-User"
+    },
+    "disableDialog": {
+      "title": "Disable Multi-User?",
+      "description": "The app will return to no-login mode. Employee accounts will be kept and will be active again if multi-user is re-enabled. Transaction data stays intact.",
+      "confirm": "Disable"
+    },
+    "logoutDialog": {
+      "title": "Log Out?",
+      "description": "You will be directed to the login page. Make sure there are no open bills unsaved.",
+      "confirm": "Logout"
+    }
+  },
+  "transactionsAndStock": {
+    "sectionTitle": "Transactions & Stock",
+    "transactionHistory": {
+      "title": "Transaction History",
+      "description": "View all transactions & reprint receipts"
+    },
+    "supplier": {
+      "title": "Suppliers",
+      "description": "Manage supplier data"
+    },
+    "customers": {
+      "title": "Customers",
+      "description": "Manage customer data"
+    },
+    "debts": {
+      "title": "Debt List",
+      "description": "{{count}} unpaid debts"
+    },
+    "stockIn": {
+      "title": "Stock In",
+      "description": "Record incoming stock & auto COGS"
+    },
+    "stockOut": {
+      "title": "Stock Out",
+      "description": "Record non-sales outgoing stock"
+    },
+    "expenses": {
+      "title": "Expenses",
+      "description": "Record non-stock operational costs (electricity, salary, rent, etc.)"
+    },
+    "stockReport": {
+      "title": "Stock Report",
+      "description": "View stock movements per period"
+    }
+  },
+  "masterData": {
+    "sectionTitle": "Master Data & Preferences",
+    "allowDebt": {
+      "title": "Allow Debt",
+      "description": "Cashier can accept partial or full payment as debt"
+    },
+    "paymentMethods": {
+      "title": "Payment Methods",
+      "description": "{{count}} methods · cash, transfer, e-wallet, qris"
+    },
+    "productCategory": {
+      "title": "Product Categories",
+      "description": "{{count}} categories"
+    },
+    "expenseCategory": {
+      "title": "Expense Categories",
+      "description": "{{count}} categories"
+    },
+    "units": {
+      "title": "Units",
+      "description": "{{count}} units · pcs, kg, serving, etc."
+    },
+    "theme": {
+      "title": "Theme Color",
+      "description": "Customize the app accent color",
+      "permissionLabel": "Manage Store Settings"
+    },
+    "backup": {
+      "title": "Backup & Restore",
+      "description": "Export / import store data (JSON)"
+    }
+  },
+  "bluetoothPrinter": {
+    "title": "Bluetooth Printer",
+    "default": "Default Printer",
+    "notSelected": "Not selected — receipts will be printed to the first paired printer found.",
+    "search": "Search for Paired Printers",
+    "searching": "Searching...",
+    "selectPrinter": "Select printer:",
+    "unnamed": "Unnamed",
+    "hint": "Make sure the printer is paired via Android Bluetooth Settings first."
+  },
+  "privacyAnalytics": {
+    "title": "Privacy & Analytics",
+    "label": "Help Us with Anonymous Data",
+    "description": "Send anonymous usage statistics (pages visited & actions like creating products/transactions) to help development. Business data such as product names, prices, and transaction amounts are never sent.",
+    "enabled": "Analytics enabled",
+    "disabled": "Analytics disabled"
+  },
+  "language": {
+    "title": "Language / Bahasa"
+  },
+  "about": {
+    "appName": "FreeKasir",
+    "tagline": "Free POS for Indonesian MSMEs 🇮🇩",
+    "version": "v{{version}} • Data stored on device",
+    "whatsNew": "What's New in FreeKasir",
+    "requestFeature": "💡 Request Feature",
+    "donate": "☕ Buy Developer a Coffee",
+    "telegram": "💬 Join Telegram Group",
+    "storageUsed": "Storage Used"
+  },
+  "storeDialog": {
+    "title": "Store Info",
+    "logoLabel": "Store Logo",
+    "logoPreviewAlt": "Logo",
+    "logoChange": "Change Logo",
+    "logoSelect": "Select Logo",
+    "logoRemove": "Remove Logo",
+    "storeName": "Store Name",
+    "address": "Address",
+    "phone": "Phone",
+    "saveSuccess": "Store info saved"
+  },
+  "toast": {
+    "noPairedDevices": "No paired Bluetooth devices",
+    "loadPrintersFailed": "Failed to load printer list",
+    "printerDefaultSet": "Default printer: {{name}}",
+    "printerDefaultCleared": "Default printer removed",
+    "debtEnabled": "Debt payments allowed",
+    "debtDisabled": "Debt payments disabled",
+    "invalidImage": "File must be an image",
+    "processImageFailed": "Failed to process image",
+    "nameRequired": "Owner name is required",
+    "usernameInvalid": "Username 3-20 characters, letters/numbers/underscore only",
+    "pinInvalid": "PIN must be 4-6 digits",
+    "pinMismatch": "PIN confirmation does not match",
+    "createOwnerFailed": "Failed to create owner account",
+    "multiUserEnabled": "Multi-user enabled. You are logged in as owner.",
+    "multiUserDisabled": "Multi-user disabled"
+  },
+  "cloudBackup": {
+    "locked": {
+      "title": "Cloud Sync",
+      "permissionLabel": "Manage Backup"
+    },
+    "hero": {
+      "title": "Monitor Store Real-Time<br />from Anywhere",
+      "description": "Cashier data syncs automatically to the cloud. View complete reports anytime at {{dashboard}} — from any phone or laptop.",
+      "startFrom": "From",
+      "perMonth": "/month"
+    },
+    "benefits": {
+      "realtime": {
+        "title": "Real-time reports",
+        "desc": "Revenue, profit, & stock are always synced with the latest cashier transactions."
+      },
+      "dashboard": {
+        "title": "Web dashboard",
+        "desc": "Open {{dashboard}} in a browser — owners don't need to hold the cashier phone."
+      },
+      "safe": {
+        "title": "Data safe in the cloud",
+        "desc": "Automatically stored & remains intact even if the phone is lost, damaged, or replaced."
+      }
+    },
+    "loginPrompt": "Get started, login first 👇",
+    "continueWithGoogle": "Continue with Google",
+    "loginHint": "Safe & fast — no new password needed.",
+    "previewDashboard": "Preview {{dashboard}} →",
+    "account": {
+      "fallbackName": "Google Account",
+      "logout": "Logout"
+    },
+    "syncNow": "Sync Now",
+    "lastSync": "Last sync: {{time}}",
+    "neverSynced": "Never synced",
+    "manageFromAnywhere": "Manage store from anywhere",
+    "subscription": {
+      "description": "Monitor sales, stock, & store finances from anywhere — just open on another phone or laptop. All data is safely stored in the cloud and remains intact even if the device is lost, damaged, or replaced.",
+      "loadingPlans": "Loading plans…",
+      "activePlan": "(active plan)",
+      "unlimitedStores": "Unlimited",
+      "store_one": "{{count}} store",
+      "store_other": "{{count}} stores",
+      "estimatedBackups": "≈ {{count}} backup files",
+      "estimateNote": "*Estimate based on current data size ({{size}}).",
+      "subscribe": "Subscribe",
+      "renew": "Renew",
+      "choose": "Choose",
+      "extendOrChange": "Choose the same plan to renew, or another plan to switch.",
+      "close": "Close",
+      "changePlan": "Change Plan",
+      "used": "used",
+      "from": "of",
+      "until": "until {{date}}"
+    },
+    "noStore": {
+      "title": "No store in the cloud yet",
+      "description": "Subscription is active, but data is <0>not yet synced</0> because there is no store. Create a store first so reports appear on the dashboard.",
+      "createStore": "Create Store Now"
+    },
+    "deviceNotLinked": {
+      "title": "Device not linked to a store",
+      "description": "Select a store so data can be synced to the cloud.",
+      "select": "Select"
+    },
+    "menu": {
+      "dashboard": {
+        "title": "Open Web Dashboard",
+        "subtitle": "View reports at {{dashboard}}"
+      },
+      "manageStore": {
+        "title": "Manage Stores",
+        "subtitle": "Select or create a store to sync"
+      },
+      "autoSync": {
+        "title": "Automatic Sync"
+      },
+      "history": {
+        "title": "Transaction History",
+        "subtitle": "View purchases & check payment status"
+      }
+    },
+    "interval": {
+      "off": "Off",
+      "hourly": "Every few hours",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "everyNHours": "Every {{hours}} hours"
+    },
+    "toast": {
+      "loginFailed": "Google login failed",
+      "checkoutFailed": "Failed to start payment",
+      "paymentSuccess": "Payment successful! Subscription active. 🎉",
+      "paymentNotDetected": "Payment not yet detected. Please complete the payment first.",
+      "verifyFailed": "Failed to verify payment",
+      "selectStoreFirst": "Select a store first in the Manage Store menu.",
+      "syncSuccess": "Cloud sync successful",
+      "syncFailed": "Failed to sync to cloud"
+    },
+    "paymentDialog": {
+      "title": "Waiting for Payment",
+      "description": "Complete the payment on the opened page. Subscription status will activate automatically once we receive the payment.",
+      "checking": "Automatically checking payment status every few seconds…",
+      "iHavePaid": "I have paid — Check now",
+      "openPaymentPage": "Open payment page",
+      "close": "Close"
+    }
+  },
+  "cloudAutoBackup": {
+    "locked": {
+      "title": "Automatic Sync",
+      "permissionLabel": "Manage Backup"
+    },
+    "title": "Automatic Sync",
+    "requiresSubscription": "Enable Cloud Sync subscription first to set up automatic sync.",
+    "scheduleLabel": "Automatic Sync Schedule",
+    "interval": {
+      "off": "Off",
+      "hourly": "Every few hours",
+      "daily": "Daily",
+      "weekly": "Weekly"
+    },
+    "everyHours": {
+      "prefix": "Every",
+      "suffix": "hours"
+    },
+    "scheduleNote": "Sync runs automatically when the app opens if the interval has passed. (PWA does not run sync in the background when the app is closed.)",
+    "toast": {
+      "off": "Automatic sync turned off",
+      "hourly": "Automatic sync every {{hours}} hours",
+      "daily": "Automatic sync daily",
+      "weekly": "Automatic sync weekly"
+    },
+    "hourMinError": "Minimum 1 hour"
+  },
+  "cloudHistory": {
+    "locked": {
+      "title": "Transaction History",
+      "permissionLabel": "Manage Backup"
+    },
+    "title": "Transaction History",
+    "loginPrompt": "Login first to view transaction history.",
+    "noTransactions": "No transactions yet",
+    "loadMore": "Load more",
+    "checkButton": "Check",
+    "status": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "failed": "Failed"
+    },
+    "toast": {
+      "paymentSuccess": "Payment successful! Subscription active. 🎉",
+      "pending": "Payment not detected yet. Please try again in a moment.",
+      "verifyFailed": "Failed to check payment"
+    }
+  },
+  "cloudStore": {
+    "locked": {
+      "title": "Manage Stores",
+      "permissionLabel": "Manage Backup"
+    },
+    "title": "Manage Stores",
+    "loading": "Loading…",
+    "requiresSubscription": "Cloud Sync subscription is required to manage stores.",
+    "activeDevice": "This device is connected to:",
+    "disconnect": "Disconnect",
+    "storeList": "Store List",
+    "used": "{{used}} of {{max}} used",
+    "unlimited": "unlimited",
+    "addButton": "Add",
+    "atLimit": {
+      "title": "Your plan's store limit is full",
+      "description": "Current plan only allows {{max}} stores. Upgrade Cloud Sync plan to add more.",
+      "upgrade": "Upgrade Plan"
+    },
+    "noStore": "No stores yet. Create your first store.",
+    "createFirst": "Create your first store",
+    "addNew": "Add new store",
+    "storeNamePlaceholder": "Store name, e.g. Jakarta Branch Store",
+    "create": "Create",
+    "rename": "Rename",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "connect": "Connect",
+    "deleteConfirm": "Delete \"{{name}}\"? All sync data (products, transactions, etc.) will be permanently deleted from the cloud.",
+    "yesDelete": "Yes, delete",
+    "stats": {
+      "stores": "stores",
+      "products": "products",
+      "transactions": "transactions",
+      "backups": "backups"
+    },
+    "created": "Created {{date}}",
+    "upgrade": "Upgrade Plan",
+    "toast": {
+      "bind": "This device is connected to the store.",
+      "unbind": "Device disconnected from the store.",
+      "create": "Store created successfully.",
+      "createFailed": "Failed to create store",
+      "rename": "Store name updated.",
+      "renameFailed": "Failed to rename store",
+      "delete": "Store and all its sync data deleted.",
+      "deleteFailed": "Failed to delete store",
+      "createBound": "Store created and device automatically connected.",
+      "atLimit": "Your plan's store limit is full. Upgrade plan to add more stores."
+    }
+  },
+  "transactionHistory": {
+    "title": "Transaction History",
+    "searchPlaceholder": "Search receipt no. or product name...",
+    "dateFrom": "From date",
+    "dateTo": "To date",
+    "status": {
+      "all": "All",
+      "open": "Open Bill",
+      "completed": "Paid"
+    },
+    "cashierFilter": {
+      "placeholder": "Filter Cashier",
+      "all": "All Cashiers",
+      "unknown": "No Cashier (old data)",
+      "cashierLabel": "{{name}} (@{{username}})"
+    },
+    "summary": {
+      "totalTransactions": "Total Transactions",
+      "totalSales": "Total Sales"
+    },
+    "empty": {
+      "noDateFilter": "No transactions yet",
+      "withDateFilter": "No transactions in this date range"
+    },
+    "groupHeader_zero": "{{date}} · {{count}} transactions",
+    "groupHeader_one": "{{date}} · {{count}} transaction",
+    "groupHeader_other": "{{date}} · {{count}} transactions",
+    "badges": {
+      "open": "Open",
+      "debt": "Debt",
+      "paid": "Paid"
+    },
+    "cashFallback": "Cash",
+    "detail": {
+      "title": "Transaction Detail",
+      "status": {
+        "label": "Status",
+        "open": "Open Bill",
+        "paid": "Paid"
+      },
+      "receiptNumber": "Receipt No.",
+      "date": "Date",
+      "payment": "Payment",
+      "cashier": "Cashier",
+      "customer": "Customer",
+      "table": "Table {{number}}",
+      "notes": "Notes",
+      "items": "Items",
+      "quantityFormat": "{{qty}} × {{price}}",
+      "discount": "discount {{amount}}",
+      "subtotal": "Subtotal",
+      "discountAmount": "Discount",
+      "total": "Total",
+      "remainingDebt": "Remaining Debt",
+      "paid": "Paid",
+      "change": "Change",
+      "profit": "Profit",
+      "unpaidBill": "Bill not paid yet",
+      "continueInCashier": "Continue at Cashier",
+      "viewReceipt": "View & Print Receipt",
+      "delete": "Delete Transaction",
+      "noDeletePermission": "You don't have permission to delete transactions"
+    },
+    "deleteDialog": {
+      "title": "Delete Transaction?",
+      "description": "Transaction {{receiptNumber}} worth {{amount}} will be permanently deleted.",
+      "restoreStock": "Restore product stock",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "hasDebtPayments": "Transaction cannot be deleted because it has debt payments already",
+      "deleteSuccess": "Transaction deleted successfully",
+      "deleteFailed": "Failed to delete transaction"
+    }
+  },
+  "supplier": {
+    "locked": {
+      "title": "Suppliers",
+      "permissionLabel": "Manage Suppliers"
+    },
+    "title": "Suppliers",
+    "add": "Add",
+    "searchPlaceholder": "Search supplier...",
+    "count_zero": "{{count}} suppliers",
+    "count_one": "{{count}} supplier",
+    "count_other": "{{count}} suppliers",
+    "empty": {
+      "title": "No suppliers yet",
+      "add": "Add Supplier"
+    },
+    "dialog": {
+      "addTitle": "Add Supplier",
+      "editTitle": "Edit Supplier",
+      "nameLabel": "Supplier Name *",
+      "namePlaceholder": "e.g. PT Sumber Jaya",
+      "phoneLabel": "Phone",
+      "phonePlaceholder": "08123456789",
+      "addressLabel": "Address",
+      "addressPlaceholder": "Supplier address",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Additional notes",
+      "save": "Save"
+    },
+    "deleteDialog": {
+      "title": "Delete Supplier?",
+      "description": "Deleted supplier data cannot be recovered.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "updated": "Supplier updated",
+      "added": "Supplier added",
+      "deleted": "Supplier deleted"
+    }
+  },
+  "customers": {
+    "locked": {
+      "title": "Customers",
+      "permissionLabel": "Manage Customers"
+    },
+    "title": "Customers",
+    "add": "Add",
+    "searchPlaceholder": "Search customer...",
+    "count_zero": "{{count}} customers",
+    "count_one": "{{count}} customer",
+    "count_other": "{{count}} customers",
+    "empty": {
+      "title": "No customers yet",
+      "add": "Add Customer"
+    },
+    "dialog": {
+      "addTitle": "Add Customer",
+      "editTitle": "Edit Customer",
+      "nameLabel": "Customer Name *",
+      "namePlaceholder": "e.g. Budi Santoso",
+      "phoneLabel": "Phone Number",
+      "phonePlaceholder": "08123456789",
+      "emailLabel": "Email",
+      "emailPlaceholder": "name@email.com",
+      "addressLabel": "Address",
+      "addressPlaceholder": "Customer address",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Additional notes",
+      "save": "Save"
+    },
+    "deleteDialog": {
+      "title": "Delete Customer?",
+      "description": "Deleted customer data cannot be recovered. Old transactions still keep the customer name.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "viewDialog": {
+      "summary": {
+        "totalTransactions": "Total Transactions",
+        "totalSpent": "Total Spent",
+        "remainingDebt": "Remaining Debt"
+      },
+      "openDebts": "Open Debt List",
+      "historyTitle": "Transaction History",
+      "loading": "Loading...",
+      "empty": "No transactions yet"
+    },
+    "toast": {
+      "updated": "Customer updated",
+      "added": "Customer added",
+      "deleted": "Customer deleted"
+    }
+  },
+  "debts": {
+    "locked": {
+      "title": "Debt List",
+      "permissionLabel": "Manage Customers"
+    },
+    "title": "Debt List",
+    "summary": {
+      "totalReceivable": "Total Receivable",
+      "activeDebts": "Active Debts"
+    },
+    "searchPlaceholder": "Search customer or receipt number...",
+    "filters": {
+      "active": "Unpaid",
+      "paid": "Paid",
+      "all": "All"
+    },
+    "empty": "No debt data",
+    "labels": {
+      "originalAmount": "Original Debt",
+      "paid": "Paid",
+      "remaining": "Remaining"
+    },
+    "recordPayment": "Record Payment",
+    "deletedMethodFallback": "Deleted method",
+    "detail": {
+      "title": "Debt Detail",
+      "status": {
+        "paid": "Paid",
+        "partial": "Partial",
+        "unpaid": "Unpaid"
+      },
+      "viewTransaction": "View transaction",
+      "paymentHistory": "Payment History",
+      "noInstallments": "No installments yet"
+    },
+    "paymentDialog": {
+      "title": "Record Debt Payment",
+      "remainingDebt": "Remaining Debt",
+      "amountLabel": "Payment Amount",
+      "methodLabel": "Payment Method",
+      "methodPlaceholder": "Select method",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "e.g. first installment",
+      "saving": "Saving...",
+      "save": "Save Payment"
+    },
+    "toast": {
+      "invalidAmount": "Payment amount must be more than Rp0 and not exceed the remaining debt",
+      "selectMethod": "Select a payment method",
+      "paidOff": "Debt paid off successfully",
+      "recorded": "Debt payment recorded",
+      "failed": "Failed to record debt payment"
+    }
+  },
+  "stockIn": {
+    "locked": {
+      "title": "Stock In",
+      "permissionLabel": "Stock In / Stock Out"
+    },
+    "title": "Stock In",
+    "add": "Add",
+    "supplierFilter": {
+      "placeholder": "Filter Supplier",
+      "searchPlaceholder": "Search supplier...",
+      "all": "All Suppliers"
+    },
+    "count_zero": "{{count}} records",
+    "count_one": "{{count}} record",
+    "count_other": "{{count}} records",
+    "empty": "No stock in data yet",
+    "item": {
+      "fromSupplier": "from {{supplier}}",
+      "quantity": "+{{qty}}",
+      "unitPrice": "@ Rp {{price}}"
+    },
+    "dialog": {
+      "title": "Add Stock In",
+      "productLabel": "Product *",
+      "supplierLabel": "Supplier *",
+      "quantityLabel": "Quantity *",
+      "quantityPlaceholder": "10",
+      "buyPriceLabel": "Buy Price/Unit *",
+      "buyPricePlaceholder": "5000",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Optional",
+      "total": "Total: Rp {{amount}}",
+      "save": "Save Stock In"
+    },
+    "toast": {
+      "fillAll": "Please complete all fields",
+      "success": "Stock {{product}} increased by {{qty}}. COGS: Rp {{hpp}}"
+    }
+  },
+  "stockOut": {
+    "locked": {
+      "title": "Stock Out",
+      "permissionLabel": "Stock In / Stock Out"
+    },
+    "title": "Stock Out",
+    "add": "Add",
+    "count_zero": "{{count}} records",
+    "count_one": "{{count}} record",
+    "count_other": "{{count}} records",
+    "empty": "No stock out data yet",
+    "item": {
+      "quantity": "-{{qty}}"
+    },
+    "dialog": {
+      "title": "Add Stock Out",
+      "productLabel": "Product *",
+      "quantityLabel": "Quantity *",
+      "quantityPlaceholder": "1",
+      "reasonLabel": "Reason *",
+      "reasonPlaceholder": "Select",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Optional",
+      "stockAfter": "Stock after: {{stock}} {{unit}}",
+      "save": "Save Stock Out"
+    },
+    "reasons": {
+      "damaged": "Damaged",
+      "lost": "Lost",
+      "expired": "Expired",
+      "returnSupplier": "Return to Supplier",
+      "ownUse": "Own Use",
+      "other": "Other"
+    },
+    "toast": {
+      "fillAll": "Please complete all fields",
+      "exceedsStock": "Quantity exceeds available stock",
+      "success": "Stock {{product}} decreased by {{qty}}"
+    }
+  },
+  "expenses": {
+    "locked": {
+      "title": "Expenses",
+      "permissionLabel": "View Expenses"
+    },
+    "title": "Expenses",
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "range": {
+      "today": "Today",
+      "last7": "7 days",
+      "last30": "30 days",
+      "thisMonth": "This month",
+      "all": "All"
+    },
+    "summary": {
+      "totalExpenses": "Total Expenses ({{range}})",
+      "count_zero": "{{count}} records",
+      "count_one": "{{count}} record",
+      "count_other": "{{count}} records"
+    },
+    "categoryFilter": {
+      "placeholder": "Filter category",
+      "all": "All categories"
+    },
+    "clearFilter": "Clear filter",
+    "empty": {
+      "none": "No expenses recorded yet",
+      "filtered": "No expenses match the filter"
+    },
+    "dialog": {
+      "addTitle": "Add Expense",
+      "editTitle": "Edit Expense",
+      "missingCategories": "No expense categories yet. Add them first in Settings.",
+      "missingPaymentMethods": "No payment methods yet. Add them first in Settings.",
+      "titleLabel": "Title *",
+      "titlePlaceholder": "e.g. Pay this month's electricity bill",
+      "categoryLabel": "Category *",
+      "categoryPlaceholder": "Select category",
+      "amountLabel": "Amount *",
+      "amountPlaceholder": "50000",
+      "dateLabel": "Date *",
+      "methodLabel": "Payment Method *",
+      "methodPlaceholder": "Select method",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Optional",
+      "addButton": "Record Expense",
+      "saveButton": "Save Changes"
+    },
+    "deleteDialog": {
+      "title": "Delete expense?",
+      "description": "\"{{title}}\" amounting to {{amount}} will be deleted. This record will not be included in reports.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "titleRequired": "Expense title is required",
+      "categoryRequired": "Select a category",
+      "amountInvalid": "Amount must be greater than 0",
+      "methodRequired": "Select a payment method",
+      "dateRequired": "Select a date",
+      "updated": "Expense updated",
+      "added": "Expense recorded",
+      "saveFailed": "Failed to save expense",
+      "deleted": "Expense deleted"
+    }
+  },
+  "stockReport": {
+    "locked": {
+      "title": "Stock Report",
+      "permissionLabel": "View Reports & Profit"
+    },
+    "title": "Stock Report",
+    "period": {
+      "7days": "7 Days",
+      "30days": "30 Days"
+    },
+    "summary": {
+      "in": "In",
+      "out": "Out",
+      "available": "Available"
+    },
+    "stockInValue": {
+      "title": "Stock In Value",
+      "totalPurchase": "Total Purchase",
+      "average": "Average: {{avg}} per unit"
+    },
+    "movementChart": {
+      "title": "Stock Movement",
+      "in": "In",
+      "out": "Out"
+    },
+    "reasons": {
+      "title": "Stock Out Reasons",
+      "damaged": "Damaged",
+      "lost": "Lost",
+      "return": "Return",
+      "expired": "Expired",
+      "sample": "Sample",
+      "other": "Other",
+      "unit": "unit"
+    },
+    "lowStock": {
+      "title": "Low Stock ({{count}})",
+      "more_zero": "+{{count}} other products",
+      "more_one": "+{{count}} other product",
+      "more_other": "+{{count}} other products"
+    },
+    "outOfStock": {
+      "title": "Out of Stock ({{count}})"
+    }
+  },
+  "backupRestore": {
+    "locked": {
+      "title": "Backup & Restore",
+      "permissionLabel": "Manage Backup"
+    },
+    "title": "Backup & Restore",
+    "exportButton": "Export Backup (JSON)",
+    "importButton": "Import / Restore Data",
+    "lastBackup": "Last backup: {{time}}",
+    "emptyFile": "Empty file",
+    "restoreSuccess": "Data restored successfully!",
+    "readError": "Failed to read file"
+  },
+  "expenseCategory": {
+    "locked": {
+      "title": "Expense Categories",
+      "permissionLabel": "Manage Categories & Payments"
+    },
+    "title": "Expense Categories",
+    "addButton": "Add",
+    "empty": "No expense categories yet",
+    "dialog": {
+      "addTitle": "Add Expense Category",
+      "editTitle": "Edit Expense Category",
+      "nameLabel": "Category Name",
+      "namePlaceholder": "e.g. Internet, Marketing",
+      "iconLabel": "Icon",
+      "colorLabel": "Color",
+      "save": "Save"
+    },
+    "toast": {
+      "saved": "Expense category saved",
+      "deleted": "Expense category deleted",
+      "inUse": "Cannot delete: used by {{count}} expenses"
+    }
+  },
+  "paymentMethod": {
+    "locked": {
+      "title": "Payment Methods",
+      "permissionLabel": "Manage Categories & Payments"
+    },
+    "title": "Payment Methods",
+    "addButton": "Add",
+    "empty": "No payment methods yet",
+    "dialog": {
+      "addTitle": "Add Payment Method",
+      "editTitle": "Edit Payment Method",
+      "nameLabel": "Name",
+      "namePlaceholder": "e.g. BCA Transfer",
+      "categoryLabel": "Category",
+      "save": "Save"
+    },
+    "toast": {
+      "saved": "Payment method saved",
+      "deleted": "Deleted"
+    }
+  },
+  "productCategory": {
+    "locked": {
+      "title": "Product Categories",
+      "permissionLabel": "Manage Categories & Payments"
+    },
+    "title": "Product Categories",
+    "addButton": "Add",
+    "empty": "No product categories yet",
+    "dialog": {
+      "addTitle": "Add Category",
+      "editTitle": "Edit Category",
+      "nameLabel": "Category Name",
+      "namePlaceholder": "e.g. Snacks",
+      "iconLabel": "Icon",
+      "colorLabel": "Color",
+      "save": "Save"
+    },
+    "toast": {
+      "saved": "Category saved",
+      "deleted": "Deleted"
+    }
+  },
+  "units": {
+    "title": "Units",
+    "addButton": "Add",
+    "empty": "No units yet",
+    "dialog": {
+      "addTitle": "Add Unit",
+      "editTitle": "Edit Unit",
+      "nameLabel": "Unit Name",
+      "namePlaceholder": "e.g. pack, dozen, bowl",
+      "save": "Save",
+      "renameHint": "All products using \"{{old}}\" will be automatically renamed to \"{{new}}\"."
+    },
+    "deleteDialog": {
+      "title": "Delete Unit \"{{name}}\"?",
+      "inUse": "Currently used by {{count}} products. Existing products will keep the unit \"{{name}}\", but this unit will no longer appear in the options when adding/editing new products.",
+      "safe": "This unit is not used by any products. Safe to delete.",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "saved": "Unit saved",
+      "saveFailed": "Failed to save unit",
+      "deleted": "Unit deleted",
+      "duplicate": "Unit \"{{name}}\" already exists",
+      "wasDeleted": "Unit \"{{name}}\" was previously deleted. Use a different name or restore via backup."
+    }
+  },
+  "cashier": {
+    "locked": {
+      "title": "Cashier",
+      "permissionLabel": "Create Transaction"
+    },
+    "title": "Cashier",
+    "editingBill": "Editing Bill",
+    "openBill": "Open Bill",
+    "searchPlaceholder": "Search products...",
+    "scanPlaceholder": "Scan / type SKU or Barcode then press Enter...",
+    "categoryAll": "All",
+    "empty": {
+      "outOfStock": "All products are out of stock. Add stock first in the Stock In menu.",
+      "noProducts": "No products yet. Add products first in the Products menu."
+    },
+    "productCard": {
+      "stock": "Stock: {{stock}} {{unit}}",
+      "alwaysAvailable": "Always available"
+    },
+    "cart": {
+      "title": "Cart ({{count}} item)",
+      "title_other": "Cart ({{count}} items)",
+      "empty": "Cart is empty",
+      "editLabel": "— edit",
+      "editOpenBillLabel": "— edit open bill"
+    },
+    "itemNotes": {
+      "add": "Add note",
+      "placeholder": "e.g. less sugar..."
+    },
+    "itemDiscount": {
+      "add": "Add discount",
+      "change": "Change discount"
+    },
+    "cartDiscount": {
+      "label": "Discount",
+      "add": "Add Discount",
+      "change": "Change",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "total": "Total"
+    },
+    "buttons": {
+      "saveBill": "Save Bill",
+      "pay": "Pay",
+      "cancelBill": "Cancel This Bill",
+      "ok": "OK",
+      "cancel": "Cancel"
+    },
+    "checkout": {
+      "title": "Payment",
+      "totalLabel": "Total to Pay",
+      "debtLabel": "Pay with debt",
+      "debtDesc": "Payment may be partially or fully as debt",
+      "paymentMethod": "Payment Method",
+      "amountLabel": {
+        "debt": "Initial Payment",
+        "full": "Payment Amount"
+      },
+      "amountPlaceholder": "Enter payment amount...",
+      "exactMoney": "Exact Amount",
+      "reset": "Reset",
+      "table": "Table",
+      "notes": "Additional notes (optional)",
+      "remainingDebt": "Remaining Debt",
+      "remainingDebtHint": "Customer must be selected from the list",
+      "changeLabel": "Change",
+      "confirmButton": "Confirm Transaction"
+    },
+    "discountDialog": {
+      "title": "Transaction Discount",
+      "typeLabel": "Discount Type",
+      "type": {
+        "nominal": "Nominal ({{symbol}})",
+        "percentage": "Percent (%)"
+      },
+      "amountLabel": {
+        "nominal": "Discount Amount",
+        "percentage": "Discount Percentage"
+      },
+      "placeholder": {
+        "nominal": "e.g. 5000",
+        "percentage": "e.g. 10"
+      },
+      "percentPreview": "= {{symbol}} {{amount}} of {{symbol}} {{subtotal}}",
+      "delete": "Delete",
+      "save": "Save Discount"
+    },
+    "itemDiscountDialog": {
+      "title": "Item Discount",
+      "itemLabel": "Item",
+      "typeLabel": "Discount Type",
+      "type": {
+        "nominal": "Nominal ({{symbol}})",
+        "percentage": "Percent (%)"
+      },
+      "amountLabel": {
+        "nominal": "Discount Amount",
+        "percentage": "Discount Percentage"
+      },
+      "placeholder": {
+        "nominal": "e.g. 5000",
+        "percentage": "e.g. 10"
+      },
+      "cappedPreview": {
+        "exceeds": "Automatically capped to {{cap}}",
+        "normal": "Discount: -{{amount}} → subtotal {{subtotal}}"
+      },
+      "delete": "Delete",
+      "save": "Save Discount"
+    },
+    "openBillsSheet": {
+      "title": "Open Bills ({{count}})",
+      "empty": "No open bills",
+      "continue": "Continue",
+      "cancel": "Cancel",
+      "tablePrefix": "Table {{number}}"
+    },
+    "cancelDialog": {
+      "title": "Cancel Bill?",
+      "description": "This bill will be deleted and product stock will be restored.",
+      "no": "No",
+      "yes": "Cancel Bill"
+    },
+    "paymentMethod": {
+      "cash": "Cash",
+      "debt": "Debt",
+      "initialPayment": "Initial payment"
+    },
+    "toast": {
+      "stockLow": "Insufficient stock",
+      "stockLowWithMax": "Insufficient stock, max {{max}}",
+      "addedToCart": "Added: {{name}}",
+      "productNotFound": "Product with SKU/Barcode \"{{code}}\" not found",
+      "productOutOfStock": "{{name}} out of stock",
+      "billUpdated": "Bill {{receiptNumber}} updated!",
+      "billSaved": "Bill {{receiptNumber}} saved!",
+      "billCancelled": "Bill {{receiptNumber}} cancelled",
+      "transactionSuccess": "Transaction successful! {{receiptNumber}}",
+      "cartEmpty": "Cart is empty",
+      "selectCustomerForDebt": "Select a customer from the list for debt transactions",
+      "paymentAmountRange": "Payment amount must be between {{symbol}}0 and the transaction total",
+      "selectPaymentMethod": "Select a method for the initial payment",
+      "productNotFoundLoadBill": "Product \"{{name}}\" not found"
+    }
+  },
+  "loginScreen": {
+    "storeFallback": "FreeKasir",
+    "continuePrompt": "Sign in to continue",
+    "usernameLabel": "Username",
+    "usernamePlaceholder": "e.g. budi",
+    "pinLabel": "PIN",
+    "pinPlaceholder": "4-6 digits",
+    "showPin": "Show PIN",
+    "hidePin": "Hide PIN",
+    "loginButton": "Sign In",
+    "loggingIn": "Signing in…",
+    "loginFailed": "Login failed",
+    "forgotPin": "Forgot PIN? Contact the store owner to reset.",
+    "logoAlt": "Logo"
+  },
+  "receipt": {
+    "title": "Transaction Receipt",
+    "logoAlt": "Logo",
+    "storeFallback": "Store",
+    "no": "No",
+    "cashierLabel": "Cashier",
+    "customerLabel": "Customer",
+    "tableLabel": "Table",
+    "notesLabel": "Notes",
+    "discountLabel": "Discount",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "total": "TOTAL",
+    "paid": "Paid",
+    "change": "Change",
+    "remainingDebt": "Remaining Debt",
+    "footerFallback": "Thank you for your visit!",
+    "download": "Download",
+    "share": "Share",
+    "print": "Print",
+    "done": "Done",
+    "toast": {
+      "captureError": "Failed to create receipt image",
+      "downloadSuccess": "Receipt downloaded successfully",
+      "shareFailed": "Failed to share receipt",
+      "bluetoothUnavailable": "Bluetooth is not available in this browser. Use Chrome on Android.",
+      "searchingPrinter": "Searching for Bluetooth printer...",
+      "printSuccess": "Receipt printed successfully!",
+      "printFailed": "Failed to print. Make sure the Bluetooth printer is on."
+    },
+    "shareTitle": "Receipt {{receiptNumber}}",
+    "shareText": "Receipt from {{storeName}}",
+    "whatsappFallback": "*{{storeName}}*\nReceipt: {{receiptNumber}}\nTotal: {{total}}\nDate: {{date}}"
+  },
+  "users": {
+    "notEnabled": {
+      "title": "Multi-user is not active",
+      "description": "Enable it in Settings first to manage employees and access.",
+      "button": "Open Settings"
+    },
+    "notOwner": "Only the store owner can manage employees.",
+    "title": "Employees & Access",
+    "desc": "Manage who can access what in your store. The owner always has full access.",
+    "addButton": "Add Employee",
+    "card": {
+      "owner": "Owner",
+      "you": "You",
+      "inactive": "Inactive",
+      "noAccess": "No access",
+      "accessCount_zero": "{{count}} access rights granted",
+      "accessCount_one": "{{count}} access right granted",
+      "accessCount_other": "{{count}} access rights granted",
+      "lastLogin": "Last login: {{time}}",
+      "edit": "Edit",
+      "resetPin": "Reset PIN",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "delete": "Delete"
+    },
+    "dialog": {
+      "addTitle": "Add Employee",
+      "editTitle": "Edit Employee",
+      "descAdd": "Employee will login with username and PIN.",
+      "descEdit": "Change name and access. Username cannot be changed; use the reset PIN button to change the PIN.",
+      "nameLabel": "Full Name *",
+      "namePlaceholder": "e.g. John Doe",
+      "usernameLabel": "Username *",
+      "usernamePlaceholder": "e.g. johndoe",
+      "usernameHint": "3-20 characters, letters/numbers/underscore only",
+      "pinLabel": "PIN *",
+      "pinPlaceholder": "4-6 digits",
+      "ownerNotice": "Owner always has full access to all features.",
+      "accessLabel": "Access Rights",
+      "saving": "Saving…",
+      "saveAdd": "Add Employee",
+      "saveEdit": "Save Changes"
+    },
+    "pinReset": {
+      "title": "Reset PIN {{name}}",
+      "desc": "Enter a new PIN. The old PIN will be replaced immediately and {{name}} must log in again with the new PIN.",
+      "placeholder": "4-6 digits",
+      "button": "Save New PIN"
+    },
+    "deleteDialog": {
+      "title": "Delete Account {{name}}?",
+      "description": "The account will be permanently deleted. Transaction history created by this account will not be deleted, but the cashier name will appear as \"—\".",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "toast": {
+      "nameRequired": "Name cannot be empty",
+      "usernameInvalid": "Username must be 3-20 characters, letters/numbers/underscore only",
+      "pinInvalid": "PIN must be 4-6 digits",
+      "createFailed": "Failed to add employee",
+      "staffCreated": "Employee \"{{name}}\" added",
+      "staffUpdated": "Employee data updated",
+      "pinReset": "PIN for {{name}} reset successfully",
+      "pinResetFailed": "Failed to reset PIN",
+      "cannotSelfDisable": "Cannot deactivate the currently logged-in account",
+      "ownerMinRequired": "At least 1 owner is required",
+      "cannotSelfDelete": "Cannot delete your own account",
+      "accountDisabled": "Account deactivated",
+      "accountEnabled": "Account activated",
+      "accountDeleted": "Account \"{{name}}\" deleted"
+    }
+  },
+  "backupReminder": {
+    "title": "Backup Your Data",
+    "lastBackup": "Last backup: {{time}}",
+    "neverBackedUp": "You have not backed up data yet",
+    "backupNow": "Backup Now",
+    "shareTitle": "Backup FreeKasir",
+    "shareText": "FreeKasir backup data file (JSON)",
+    "shareDialogTitle": "Save / Share Backup",
+    "successCreated": "Backup created successfully!",
+    "successDownloaded": "Backup downloaded successfully",
+    "errorCreateShare": "Failed to create / share backup file"
+  },
+  "pushPermission": {
+    "title": "Enable Notifications?",
+    "description": "So you do not miss important updates directly on your phone — without opening the app.",
+    "benefits": {
+      "cloudBackup": "Cloud backup status: success, failure, or quota almost full.",
+      "payment": "Payment confirmation & reminders before subscription ends.",
+      "announcement": "Maintenance info & important announcements from FreeKasir."
+    },
+    "enable": "Enable Notifications",
+    "later": "Maybe Later",
+    "hint": "You can turn it off anytime from browser settings."
+  },
+  "customerPicker": {
+    "placeholder": "Customer name",
+    "addLabel": "Add customer \"{{name}}\"",
+    "toastAdded": "Customer \"{{name}}\" added",
+    "toastFailed": "Failed to add customer"
+  },
+  "searchableSelect": {
+    "placeholder": "Select...",
+    "searchPlaceholder": "Search...",
+    "notFound": "Not found"
+  },
+  "productPicker": {
+    "placeholder": "Search name, SKU, or barcode...",
+    "stockLabel": "stock:",
+    "hppLabel": "Last COGS:",
+    "notFound": "Product not found",
+    "skuBarcodeNotFound": "Product with SKU/Barcode \"{{code}}\" not found"
+  }
+}

@@ -1,13 +1,18 @@
 import { useRef, useState } from 'react';
 import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { id, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import html2canvas from 'html2canvas';
-import { Download, Share2, Printer, X } from 'lucide-react';
+import { Download, Share2, Printer } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import type { Transaction, StoreSettings, TransactionItemRecord } from '@/lib/db';
 import { isNativePlatform, printNativeBluetooth, getESCPOSData } from '@/lib/printer';
+
+const LOCALES: Record<string, Locale> = { id, en: enUS, ms };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 interface ReceiptProps {
   open: boolean;
@@ -16,12 +21,20 @@ interface ReceiptProps {
   items: TransactionItemRecord[];
   storeSettings: StoreSettings | undefined;
   paymentMethodName: string;
-  cashierName?: string; // optional — shown only when multi-user is on
+  cashierName?: string;
 }
 
 export default function Receipt({ open, onClose, transaction, items, storeSettings, paymentMethodName, cashierName }: ReceiptProps) {
+  const { t, i18n } = useTranslation('settings');
   const receiptRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
+
+  const dateLocale = LOCALES[i18n.language] || id;
+  const numberLocale = NUMBER_LOCALES[i18n.language] || 'id-ID';
+
+  const rp = (n: number) => `Rp ${n.toLocaleString(numberLocale)}`;
+
+  const storeName = storeSettings?.storeName || t('receipt.storeFallback');
 
   const captureReceipt = async (): Promise<HTMLCanvasElement | null> => {
     if (!receiptRef.current) return null;
@@ -35,7 +48,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       });
       return canvas;
     } catch {
-      toast.error('Gagal membuat gambar struk');
+      toast.error(t('receipt.toast.captureError'));
       return null;
     } finally {
       setGenerating(false);
@@ -49,7 +62,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
     link.download = `struk-${transaction.receiptNumber}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
-    toast.success('Struk berhasil diunduh');
+    toast.success(t('receipt.toast.downloadSuccess'));
   };
 
   const handleShare = async () => {
@@ -63,20 +76,24 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
       if (navigator.share) {
         const file = new File([blob], `struk-${transaction.receiptNumber}.png`, { type: 'image/png' });
         await navigator.share({
-          title: `Struk ${transaction.receiptNumber}`,
-          text: `Struk dari ${storeSettings?.storeName || 'Toko'}`,
+          title: t('receipt.shareTitle', { receiptNumber: transaction.receiptNumber }),
+          text: t('receipt.shareText', { storeName }),
           files: [file],
         });
       } else {
-        // Fallback: open WhatsApp with text
         const text = encodeURIComponent(
-          `*${storeSettings?.storeName || 'Toko'}*\nStruk: ${transaction.receiptNumber}\nTotal: Rp ${transaction.total.toLocaleString('id-ID')}\nTanggal: ${format(new Date(transaction.date), 'dd MMM yyyy HH:mm', { locale: id })}`
+          t('receipt.whatsappFallback', {
+            storeName,
+            receiptNumber: transaction.receiptNumber,
+            total: rp(transaction.total),
+            date: format(new Date(transaction.date), 'dd MMM yyyy HH:mm', { locale: dateLocale }),
+          })
         );
         window.open(`https://wa.me/?text=${text}`, '_blank');
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== 'AbortError') {
-        toast.error('Gagal membagikan struk');
+        toast.error(t('receipt.toast.shareFailed'));
       }
     }
   };
@@ -90,12 +107,12 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
     }
 
     if (!('bluetooth' in navigator)) {
-      toast.error('Bluetooth tidak tersedia di browser ini. Gunakan Chrome di Android.');
+      toast.error(t('receipt.toast.bluetoothUnavailable'));
       return;
     }
 
     try {
-      toast.info('Mencari printer Bluetooth...');
+      toast.info(t('receipt.toast.searchingPrinter'));
       // @ts-expect-error Web Bluetooth API is not fully typed in TypeScript
       const device = await navigator.bluetooth.requestDevice({
         filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
@@ -112,22 +129,20 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         await characteristic.writeValue(chunk);
       }
 
-      toast.success('Struk berhasil dicetak!');
+      toast.success(t('receipt.toast.printSuccess'));
       await server.disconnect();
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== 'NotFoundError') {
-        toast.error('Gagal mencetak. Pastikan printer Bluetooth menyala.');
+        toast.error(t('receipt.toast.printFailed'));
       }
     }
   };
-
-  const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
 
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-y-auto rounded-xl p-4">
         <DialogHeader>
-          <DialogTitle className="text-center">Struk Transaksi</DialogTitle>
+          <DialogTitle className="text-center">{t('receipt.title')}</DialogTitle>
         </DialogHeader>
 
         {/* Receipt preview - this gets captured as image */}
@@ -135,9 +150,9 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
           {/* Store Header */}
           <div className="text-center mb-2">
             {storeSettings?.logo && (
-              <img src={storeSettings.logo} alt="Logo" className="w-16 h-16 object-contain mx-auto mb-1" />
+              <img src={storeSettings.logo} alt={t('receipt.logoAlt')} className="w-16 h-16 object-contain mx-auto mb-1" />
             )}
-            <p className="font-bold text-sm">{storeSettings?.storeName || 'Toko'}</p>
+            <p className="font-bold text-sm">{storeName}</p>
             {storeSettings?.address && <p className="text-[10px]">{storeSettings.address}</p>}
             {storeSettings?.phone && <p className="text-[10px]">{storeSettings.phone}</p>}
           </div>
@@ -146,30 +161,30 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
           {/* Receipt info */}
           <div className="flex justify-between text-[10px]">
-            <span>No: {transaction.receiptNumber}</span>
+            <span>{t('receipt.no')}: {transaction.receiptNumber}</span>
           </div>
           <div className="flex justify-between text-[10px] mb-1">
-            <span>{format(new Date(transaction.date), 'dd/MM/yyyy HH:mm', { locale: id })}</span>
+            <span>{format(new Date(transaction.date), 'dd/MM/yyyy HH:mm', { locale: dateLocale })}</span>
             <span>{paymentMethodName}</span>
           </div>
           {cashierName && (
             <div className="flex justify-between text-[10px]">
-              <span>Kasir: {cashierName}</span>
+              <span>{t('receipt.cashierLabel')}: {cashierName}</span>
             </div>
           )}
           {transaction.customerName && (
             <div className="flex justify-between text-[10px]">
-              <span>Pelanggan: {transaction.customerName}</span>
+              <span>{t('receipt.customerLabel')}: {transaction.customerName}</span>
             </div>
           )}
           {transaction.tableNumber && (
             <div className="flex justify-between text-[10px]">
-              <span>Meja: {transaction.tableNumber}</span>
+              <span>{t('receipt.tableLabel')}: {transaction.tableNumber}</span>
             </div>
           )}
           {transaction.remarks && (
             <div className="text-[10px]">
-              <span>Catatan: {transaction.remarks}</span>
+              <span>{t('receipt.notesLabel')}: {transaction.remarks}</span>
             </div>
           )}
 
@@ -186,7 +201,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
               </div>
               {item.discountAmount > 0 && (
                 <div className="flex justify-between text-[10px] text-gray-500">
-                  <span>  Diskon</span>
+                  <span>  {t('receipt.discountLabel')}</span>
                   <span>-{rp(item.discountAmount)}</span>
                 </div>
               )}
@@ -198,31 +213,31 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
           {/* Totals */}
           <div className="space-y-0.5 text-[11px]">
             <div className="flex justify-between">
-              <span>Subtotal</span>
+              <span>{t('receipt.subtotal')}</span>
               <span>{rp(transaction.subtotal)}</span>
             </div>
             {transaction.discountAmount > 0 && (
               <div className="flex justify-between">
-                <span>Diskon</span>
+                <span>{t('receipt.discount')}</span>
                 <span>-{rp(transaction.discountAmount)}</span>
               </div>
             )}
             <div className="flex justify-between font-bold text-xs border-t border-dashed border-gray-400 pt-1 mt-1">
-              <span>TOTAL</span>
+              <span>{t('receipt.total')}</span>
               <span>{rp(transaction.total)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Bayar</span>
+              <span>{t('receipt.paid')}</span>
               <span>{rp(transaction.paymentAmount)}</span>
             </div>
             {transaction.debtAmount && transaction.debtAmount > 0 ? (
               <div className="flex justify-between font-bold">
-                <span>Sisa Hutang</span>
+                <span>{t('receipt.remainingDebt')}</span>
                 <span>{rp(transaction.debtAmount)}</span>
               </div>
             ) : (
               <div className="flex justify-between">
-                <span>Kembali</span>
+                <span>{t('receipt.change')}</span>
                 <span>{rp(transaction.change)}</span>
               </div>
             )}
@@ -232,7 +247,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
 
           {/* Footer */}
           <p className="text-center text-[10px] text-gray-500">
-            {storeSettings?.receiptFooter || 'Terima kasih atas kunjungan Anda!'}
+            {storeSettings?.receiptFooter || t('receipt.footerFallback')}
           </p>
         </div>
 
@@ -240,20 +255,20 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
         <div className="grid grid-cols-3 gap-2 mt-3">
           <Button variant="outline" className="flex flex-col items-center gap-1 h-auto py-3" onClick={handleDownload} disabled={generating}>
             <Download className="w-5 h-5" />
-            <span className="text-[10px]">Unduh</span>
+            <span className="text-[10px]">{t('receipt.download')}</span>
           </Button>
           <Button variant="outline" className="flex flex-col items-center gap-1 h-auto py-3" onClick={handleShare} disabled={generating}>
             <Share2 className="w-5 h-5" />
-            <span className="text-[10px]">Bagikan</span>
+            <span className="text-[10px]">{t('receipt.share')}</span>
           </Button>
           <Button variant="outline" className="flex flex-col items-center gap-1 h-auto py-3" onClick={handleBluetoothPrint} disabled={generating}>
             <Printer className="w-5 h-5" />
-            <span className="text-[10px]">Cetak</span>
+            <span className="text-[10px]">{t('receipt.print')}</span>
           </Button>
         </div>
 
         <Button variant="secondary" className="w-full mt-1" onClick={onClose}>
-          Selesai
+          {t('receipt.done')}
         </Button>
       </DialogContent>
     </Dialog>

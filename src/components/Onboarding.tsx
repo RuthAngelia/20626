@@ -19,46 +19,50 @@ import { listBackups, downloadBackup, type CloudBackup } from '@/lib/cloud-api';
 import { nativeGoogleSignIn } from '@/lib/google-auth';
 import { restoreFromBackupData } from '@/lib/backup';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '@/i18n';
 
 interface OnboardingProps {
   onComplete: () => void;
 }
 
-const tutorialSlides = [
-  {
-    icon: Store,
-    title: 'Selamat Datang di FreeKasir',
-    description: 'Aplikasi kasir (POS) gratis untuk UMKM Indonesia. Kelola penjualan, stok, dan laporan keuangan tokomu — semua dalam satu aplikasi, langsung dari HP, tanpa ribet.',
-    color: 'text-primary bg-primary/10',
-  },
-  {
-    icon: ShoppingCart,
-    title: 'Kasir Cepat & Mudah',
-    description: 'Proses transaksi dengan cepat. Pilih produk, atur diskon, dan pilih metode pembayaran — semua dalam hitungan detik.',
-    color: 'text-primary bg-primary/10',
-  },
-  {
-    icon: Package,
-    title: 'Kelola Stok Otomatis',
-    description: 'Catat barang masuk dari supplier, stok berkurang otomatis saat penjualan, dan HPP dihitung otomatis.',
-    color: 'text-accent bg-accent/10',
-  },
-  {
-    icon: BarChart3,
-    title: 'Laporan Lengkap',
-    description: 'Pantau penjualan harian, profit, dan produk terlaris. Semua data tersaji dalam grafik yang mudah dipahami.',
-    color: 'text-success bg-success/10',
-  },
-  {
-    icon: Shield,
-    title: 'Data Aman di HP Kamu',
-    description: 'Semua data tersimpan di perangkatmu. Tidak perlu internet, tidak perlu server. Gratis selamanya!',
-    color: 'text-warning bg-warning/10',
-  },
-];
-
 export default function Onboarding({ onComplete }: OnboardingProps) {
+  const { t, i18n } = useTranslation('onboarding');
   const isNative = useMemo(() => isNativePlatform(), []);
+
+  const tutorialSlides = useMemo(() => [
+    {
+      icon: Store,
+      title: t('slides.welcome.title'),
+      description: t('slides.welcome.description'),
+      color: 'text-primary bg-primary/10',
+      isWelcome: true,
+    },
+    {
+      icon: ShoppingCart,
+      title: t('slides.cashier.title'),
+      description: t('slides.cashier.description'),
+      color: 'text-primary bg-primary/10',
+    },
+    {
+      icon: Package,
+      title: t('slides.stock.title'),
+      description: t('slides.stock.description'),
+      color: 'text-accent bg-accent/10',
+    },
+    {
+      icon: BarChart3,
+      title: t('slides.reports.title'),
+      description: t('slides.reports.description'),
+      color: 'text-success bg-success/10',
+    },
+    {
+      icon: Shield,
+      title: t('slides.data.title'),
+      description: t('slides.data.description'),
+      color: 'text-warning bg-warning/10',
+    },
+  ], [t]);
   // Web/PWA: tutorial slides (0-3), install (4), store setup (5)
   // APK/native: tutorial slides (0-3), store setup (4)
   const [step, setStep] = useState(0);
@@ -83,7 +87,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       const idToken = await nativeGoogleSignIn();
       await cloudLogin(idToken);
     } catch {
-      toast.error('Login Google gagal');
+      toast.error(t('toast.googleLoginFailed'));
     } finally {
       setCloudLoginBusy(false);
     }
@@ -191,12 +195,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-        if (!data.version) { toast.error('File backup tidak valid'); setRestoring(false); return; }
+        if (!data.version) { toast.error(t('toast.restoreInvalidFile')); setRestoring(false); return; }
 
         const hasSomeData = ['categories', 'products', 'suppliers', 'transactions', 'paymentMethods'].some(
           key => Array.isArray(data[key]) && data[key].length > 0,
         );
-        if (!hasSomeData) { toast.error('File backup tidak berisi data'); setRestoring(false); return; }
+        if (!hasSomeData) { toast.error(t('toast.restoreNoData')); setRestoring(false); return; }
 
         // Fresh install: clear seeded defaults then load from file.
         await db.categories.clear(); await db.products.clear(); await db.suppliers.clear();
@@ -269,10 +273,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         }
 
         await markAllFeaturesSeen();
-        toast.success('Data berhasil di-restore!');
+        toast.success(t('toast.restoreSuccess'));
         onComplete();
       } catch {
-        toast.error('Gagal membaca / restore file backup');
+        toast.error(t('toast.restoreError'));
       } finally {
         setRestoring(false);
       }
@@ -307,7 +311,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       const { items } = await listBackups({ page: 1, limit: 50 });
       setCloudBackups(items);
     } catch {
-      toast.error('Gagal memuat daftar backup cloud');
+      toast.error(t('toast.cloudLoadError'));
     } finally {
       setCloudLoading(false);
     }
@@ -326,15 +330,15 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     setShowCloud(false);
     setCloudRestoringId(backup.id);
     setRestoring(true);
-    const toastId = toast.loading('Memulihkan data dari cloud…');
+    const toastId = toast.loading(t('restore.restoring'));
     try {
       const data = await downloadBackup(backup.id);
       await restoreFromBackupData(data);
       toast.dismiss(toastId);
-      await finishAfterRestore('Data berhasil di-restore dari cloud!');
+      await finishAfterRestore(t('toast.cloudRestoreSuccess'));
     } catch (err) {
       toast.dismiss(toastId);
-      toast.error(err instanceof Error ? err.message : 'Gagal restore dari cloud');
+      toast.error(err instanceof Error ? err.message : t('toast.cloudRestoreError'));
       setShowCloud(true); // buka lagi agar user bisa coba lagi
     } finally {
       setCloudRestoringId(null);
@@ -407,20 +411,55 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               return (
                 <>
                   {tutorialIndex === 0 ? (
-                    <img
-                      src="/header-icon.png"
-                      alt="FreeKasir"
-                      className="w-28 h-28 object-contain"
-                    />
+                    <>
+                      <img
+                        src="/header-icon.png"
+                        alt="FreeKasir"
+                        className="w-28 h-28 object-contain"
+                      />
+                      <div className="space-y-3">
+                        <h2 className="text-2xl font-bold tracking-tight">{slide.title}</h2>
+                        <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">{slide.description}</p>
+                      </div>
+                      {/* Language picker */}
+                      <div className="w-full max-w-xs space-y-2">
+                        <p className="text-xs text-muted-foreground font-medium">{t('language.title')}</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {SUPPORTED_LANGUAGES.map(({ code, label, flag }) => (
+                            <button
+                              key={code}
+                              type="button"
+                              onClick={() => i18n.changeLanguage(code as SupportedLanguage)}
+                              className={cn(
+                                'flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all duration-200',
+                                i18n.language === code
+                                  ? 'border-primary bg-primary/5 shadow-sm'
+                                  : 'border-border hover:border-primary/30 hover:bg-muted/50'
+                              )}
+                            >
+                              <span className="text-2xl">{flag}</span>
+                              <span className={cn(
+                                'text-[11px] font-semibold leading-tight text-center',
+                                i18n.language === code ? 'text-primary' : 'text-foreground'
+                              )}>
+                                {label}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
                   ) : (
                     <div className={cn('w-24 h-24 rounded-3xl flex items-center justify-center', slide.color)}>
                       <Icon className="w-12 h-12" />
                     </div>
                   )}
-                  <div className="space-y-3">
-                    <h2 className="text-2xl font-bold tracking-tight">{slide.title}</h2>
-                    <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">{slide.description}</p>
-                  </div>
+                  {tutorialIndex === 0 ? null : (
+                    <div className="space-y-3">
+                      <h2 className="text-2xl font-bold tracking-tight">{slide.title}</h2>
+                      <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">{slide.description}</p>
+                    </div>
+                  )}
                 </>
               );
             })()}
@@ -435,12 +474,12 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             </div>
             <div className="space-y-3">
               <h2 className="text-2xl font-bold tracking-tight">
-                {isInstalled || installDone ? 'Sudah Terinstall! ✅' : 'Install sebagai Aplikasi'}
+                {isInstalled || installDone ? t('install.installed') : t('install.title')}
               </h2>
               <p className="text-muted-foreground leading-relaxed max-w-xs mx-auto">
                 {isInstalled || installDone
-                  ? 'FreeKasir sudah terinstall. Kamu bisa buka langsung dari home screen!'
-                  : 'Install FreeKasir di HP kamu supaya bisa diakses langsung dari home screen, tanpa buka browser.'}
+                  ? t('install.installedDesc')
+                  : t('install.desc')}
               </p>
             </div>
             {!isInstalled && !installDone && (
@@ -458,7 +497,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     }}
                   >
                     <Download className="w-5 h-5 mr-2" />
-                    Install sebagai Aplikasi
+                    {t('install.button')}
                   </Button>
                   <Button
                     variant="ghost"
@@ -467,16 +506,14 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     onClick={() => setStep(s => s + 1)}
                   >
                     <Globe className="w-5 h-5 mr-2" />
-                    Lanjut di Browser
+                    {t('install.continueBrowser')}
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-3 max-w-xs">
-                  <p className="text-sm text-muted-foreground">
-                    Untuk install, buka di browser <strong>Chrome</strong> lalu ketuk menu (⋮) → <strong>"Add to Home screen"</strong> atau <strong>"Install app"</strong>.
-                  </p>
+                  <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: t('install.chromeHint') }} />
                   <p className="text-xs text-muted-foreground/70">
-                    Di Safari iOS: ketuk tombol Share (↑) → "Add to Home Screen"
+                    {t('install.safariHint')}
                   </p>
                 </div>
               )
@@ -489,8 +526,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
                 <Store className="w-8 h-8" />
               </div>
-              <h2 className="text-2xl font-bold tracking-tight">Setup Toko Kamu</h2>
-              <p className="text-sm text-muted-foreground">Informasi ini akan tampil di struk belanja</p>
+              <h2 className="text-2xl font-bold tracking-tight">{t('store.title')}</h2>
+              <p className="text-sm text-muted-foreground">{t('store.subtitle')}</p>
             </div>
 
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
@@ -499,13 +536,13 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                   <Upload className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">Sudah punya backup?</p>
-                  <p className="text-[11px] text-muted-foreground leading-snug">Restore file JSON dari device lama tanpa perlu setup toko ulang.</p>
+                  <p className="text-sm font-semibold">{t('restore.title')}</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">{t('restore.desc')}</p>
                 </div>
               </div>
               <Button variant="outline" className="w-full h-10 text-sm gap-2" onClick={handleRestore} disabled={restoring}>
                 <Upload className="w-4 h-4" />
-                {restoring ? 'Restore data...' : 'Restore Toko dari Backup'}
+                {restoring ? t('restore.restoring') : t('restore.backupButton')}
               </Button>
 
               <Button
@@ -515,7 +552,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 disabled={restoring}
               >
                 <Cloud className="w-4 h-4" />
-                Restore dari Cloud
+                {t('restore.cloudTitle')}
               </Button>
             </div>
 
@@ -532,10 +569,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                   <div>
                     <h2 className="text-base font-bold flex items-center gap-2">
                       <Cloud className="w-5 h-5 text-primary" />
-                      Restore dari Cloud
+                      {t('restore.cloudTitle')}
                     </h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Login dengan akun Google, lalu pilih backup untuk dipulihkan.
+                      {t('restore.cloudSubtitle')}
                     </p>
                   </div>
                   <Button
@@ -551,20 +588,20 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
                 {!cloudLoggedIn ? (
                   <div className="space-y-3 py-2 text-center">
-                    <p className="text-xs text-muted-foreground">Login Google untuk melihat backup di cloud.</p>
+                    <p className="text-xs text-muted-foreground">{t('restore.cloudLogin')}</p>
                     <div className="flex justify-center">
                       {isNative ? (
                         <Button className="h-11 gap-2" disabled={cloudLoginBusy} onClick={handleNativeCloudLogin}>
                           {cloudLoginBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
-                          Lanjut dengan Google
+                          {t('restore.googleContinue')}
                         </Button>
                       ) : (
                         <GoogleLogin
                           onSuccess={(cr) => {
-                            if (cr.credential) cloudLogin(cr.credential).catch(() => toast.error('Gagal login'));
-                            else toast.error('Login Google gagal');
+                            if (cr.credential) cloudLogin(cr.credential).catch(() => toast.error(t('toast.googleLoginFailed')));
+                            else toast.error(t('toast.googleLoginFailed'));
                           }}
-                          onError={() => toast.error('Login Google gagal')}
+                          onError={() => toast.error(t('toast.googleLoginFailed'))}
                         />
                       )}
                     </div>
@@ -581,7 +618,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{cloudUser?.name ?? 'Akun Google'}</p>
+                        <p className="text-sm font-semibold truncate">{cloudUser?.name ?? t('restore.account')}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{cloudUser?.email}</p>
                       </div>
                       <Button
@@ -591,7 +628,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         disabled={!!cloudRestoringId}
                         onClick={() => { cloudLogout(); setCloudBackups([]); }}
                       >
-                        <LogOut className="w-4 h-4" /> Ganti
+                        <LogOut className="w-4 h-4" /> {t('restore.switchAccount')}
                       </Button>
                     </div>
 
@@ -603,7 +640,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         </div>
                       ) : cloudBackups.length === 0 ? (
                         <p className="text-xs text-muted-foreground text-center py-6">
-                          Tidak ada backup di cloud untuk akun ini.
+                          {t('restore.noBackups')}
                         </p>
                       ) : (
                         cloudBackups.map((b) => (
@@ -630,7 +667,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                       )}
                     </div>
                     {cloudRestoringId && (
-                      <p className="text-[10px] text-muted-foreground text-center">Memulihkan data… jangan tutup aplikasi.</p>
+                      <p className="text-[10px] text-muted-foreground text-center">{t('restore.restoringInProgress')}</p>
                     )}
                   </div>
                 )}
@@ -642,11 +679,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               <div className="space-y-2">
                 <Label htmlFor="storeName" className="flex items-center gap-1.5">
                   <Store className="w-3.5 h-3.5" />
-                  Nama Toko <span className="text-destructive">*</span>
+                  {t('store.storeName')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="storeName"
-                  placeholder="Contoh: Toko Berkah Jaya"
+                  placeholder={t('store.storeNamePlaceholder')}
                   value={storeName}
                   onChange={e => setStoreName(e.target.value)}
                   className="h-12"
@@ -655,11 +692,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               <div className="space-y-2">
                 <Label htmlFor="address" className="flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5" />
-                  Alamat
+                  {t('store.address')}
                 </Label>
                 <Input
                   id="address"
-                  placeholder="Contoh: Jl. Merdeka No. 10, Jakarta"
+                  placeholder={t('store.addressPlaceholder')}
                   value={address}
                   onChange={e => setAddress(e.target.value)}
                   className="h-12"
@@ -668,11 +705,11 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               <div className="space-y-2">
                 <Label htmlFor="phone" className="flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5" />
-                  Nomor Telepon
+                  {t('store.phone')}
                 </Label>
                 <Input
                   id="phone"
-                  placeholder="Contoh: 08123456789"
+                  placeholder={t('store.phonePlaceholder')}
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   className="h-12"
@@ -687,8 +724,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     <Database className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Muat data contoh</p>
-                    <p className="text-[10px] text-muted-foreground">11 produk, 2 supplier, 3 transaksi demo</p>
+                    <p className="text-sm font-medium">{t('store.loadDummy')}</p>
+                    <p className="text-[10px] text-muted-foreground">{t('store.loadDummyDesc')}</p>
                   </div>
                 </div>
                 <Switch checked={loadDummy} onCheckedChange={setLoadDummy} />
@@ -701,8 +738,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                     <Palette className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Warna Tema</p>
-                    <p className="text-[10px] text-muted-foreground">Pilih warna utama aplikasi</p>
+                    <p className="text-sm font-medium">{t('store.theme')}</p>
+                    <p className="text-[10px] text-muted-foreground">{t('store.themeDesc')}</p>
                   </div>
                 </div>
                 <ThemeColorPicker
@@ -728,7 +765,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               className="mt-0.5"
             />
             <span className="text-xs text-muted-foreground leading-relaxed">
-              Dengan melanjutkan, saya menyetujui{' '}
+              {t('tnc.agree')}{' '}
               <a
                 href="https://freekasir.com/terms"
                 target="_blank"
@@ -736,9 +773,9 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 onClick={(e) => e.stopPropagation()}
                 className="text-primary font-medium underline"
               >
-                Syarat &amp; Ketentuan
+                {t('tnc.terms')}
               </a>{' '}
-              dan{' '}
+              {t('tnc.and')}{' '}
               <a
                 href="https://freekasir.com/privacy"
                 target="_blank"
@@ -746,7 +783,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 onClick={(e) => e.stopPropagation()}
                 className="text-primary font-medium underline"
               >
-                Kebijakan Privasi
+                {t('tnc.privacy')}
               </a>
               .
             </span>
@@ -774,7 +811,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 className="flex-1 h-12 text-base font-semibold"
                 onClick={() => setStep(s => s + 1)}
               >
-                Lanjut
+                {t('navigation.next')}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             )}
@@ -784,7 +821,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                 className="flex-1 h-12 text-base font-semibold"
                 onClick={() => setStep(s => s + 1)}
               >
-                Lanjut
+                {t('navigation.next')}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             )}
@@ -796,7 +833,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             onClick={handleFinish}
             disabled={!storeName.trim() || saving}
           >
-            {saving ? 'Menyimpan...' : 'Mulai Jualan! 🚀'}
+            {saving ? t('navigation.saving') : t('navigation.finish')}
           </Button>
         ) : (
           <Button
@@ -805,7 +842,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
             onClick={() => setStep(s => s + 1)}
             disabled={tutorialIndex === 0 && !agreedTnc}
           >
-            Lanjut
+            {t('navigation.next')}
             <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
         )}

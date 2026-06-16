@@ -12,9 +12,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
+import { useTranslation } from 'react-i18next';
+
+const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'RM' };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 export default function SupplierPage() {
   const { can } = useAuth();
+  const { t } = useTranslation('settings');
 
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -29,7 +34,7 @@ export default function SupplierPage() {
   const suppliers = useLiveQuery(() => db.suppliers.where('isDeleted').equals(0).toArray());
 
   if (!can('manage_supplier')) {
-    return <LockedPage title="Supplier" permissionLabel="Kelola Supplier" />;
+    return <LockedPage title={t('supplier.locked.title')} permissionLabel={t('supplier.locked.permissionLabel')} />;
   }
 
   const filtered = suppliers?.filter(s =>
@@ -54,16 +59,16 @@ export default function SupplierPage() {
     const data = { name: name.trim(), phone: phone.trim(), address: address.trim(), notes: notes.trim() };
     if (editSupplier?.id) {
       await db.suppliers.update(editSupplier.id, data);
-      toast.success('Supplier diperbarui');
+      toast.success(t('supplier.toast.updated'));
     } else {
       await db.suppliers.add({ ...data, createdAt: new Date(), isDeleted: 0, deletedAt: null });
-      toast.success('Supplier ditambahkan');
+      toast.success(t('supplier.toast.added'));
     }
     setDialogOpen(false);
   };
 
   const handleDelete = async () => {
-    if (deleteId) { await db.suppliers.update(deleteId, { isDeleted: 1, deletedAt: new Date() }); setDeleteId(null); toast.success('Supplier dihapus'); }
+    if (deleteId) { await db.suppliers.update(deleteId, { isDeleted: 1, deletedAt: new Date() }); setDeleteId(null); toast.success(t('supplier.toast.deleted')); }
   };
 
   return (
@@ -71,26 +76,26 @@ export default function SupplierPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Truck className="w-5 h-5 text-primary" />
-          Supplier
+          {t('supplier.title')}
         </h1>
         <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
-          <Plus className="w-4 h-4" /> Tambah
+          <Plus className="w-4 h-4" /> {t('supplier.add')}
         </Button>
       </div>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Cari supplier..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
+        <Input placeholder={t('supplier.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
       </div>
 
-      <p className="text-xs text-muted-foreground">{filtered.length} supplier</p>
+      <p className="text-xs text-muted-foreground">{t('supplier.count', { count: filtered.length })}</p>
 
       {filtered.length === 0 ? (
         <div className="text-center py-12">
           <Truck className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">Belum ada supplier</p>
+          <p className="text-sm text-muted-foreground">{t('supplier.empty.title')}</p>
           <Button variant="outline" size="sm" className="mt-3" onClick={openAdd}>
-            <Plus className="w-4 h-4 mr-1" /> Tambah Supplier
+            <Plus className="w-4 h-4 mr-1" /> {t('supplier.empty.add')}
           </Button>
         </div>
       ) : (
@@ -126,13 +131,13 @@ export default function SupplierPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl">
-          <DialogHeader><DialogTitle>{editSupplier ? 'Edit' : 'Tambah'} Supplier</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editSupplier ? t('supplier.dialog.editTitle') : t('supplier.dialog.addTitle')}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
-            <div className="space-y-1.5"><Label>Nama Supplier *</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: PT Sumber Jaya" className="h-11" /></div>
-            <div className="space-y-1.5"><Label>Telepon</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="08123456789" className="h-11" type="tel" /></div>
-            <div className="space-y-1.5"><Label>Alamat</Label><Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Alamat supplier" className="h-11" /></div>
-            <div className="space-y-1.5"><Label>Catatan</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Catatan tambahan" rows={2} /></div>
-            <Button className="w-full h-11" onClick={handleSave} disabled={!name.trim()}>Simpan</Button>
+            <div className="space-y-1.5"><Label>{t('supplier.dialog.nameLabel')}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder={t('supplier.dialog.namePlaceholder')} className="h-11" /></div>
+            <div className="space-y-1.5"><Label>{t('supplier.dialog.phoneLabel')}</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder={t('supplier.dialog.phonePlaceholder')} className="h-11" type="tel" /></div>
+            <div className="space-y-1.5"><Label>{t('supplier.dialog.addressLabel')}</Label><Input value={address} onChange={e => setAddress(e.target.value)} placeholder={t('supplier.dialog.addressPlaceholder')} className="h-11" /></div>
+            <div className="space-y-1.5"><Label>{t('supplier.dialog.notesLabel')}</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('supplier.dialog.notesPlaceholder')} rows={2} /></div>
+            <Button className="w-full h-11" onClick={handleSave} disabled={!name.trim()}>{t('supplier.dialog.save')}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -140,12 +145,12 @@ export default function SupplierPage() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Supplier?</AlertDialogTitle>
-            <AlertDialogDescription>Data supplier yang dihapus tidak bisa dikembalikan.</AlertDialogDescription>
+            <AlertDialogTitle>{t('supplier.deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('supplier.deleteDialog.description')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Hapus</AlertDialogAction>
+            <AlertDialogCancel>{t('supplier.deleteDialog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">{t('supplier.deleteDialog.confirm')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

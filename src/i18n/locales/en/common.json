@@ -1,0 +1,100 @@
+{
+  "app": {
+    "name": "FreeKasir",
+    "tagline": "Free POS — Manage Your Sales with Ease 🇮🇩"
+  },
+  "nav": {
+    "home": "Home",
+    "products": "Products",
+    "cashier": "Cashier",
+    "reports": "Reports",
+    "more": "More"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "add": "Add",
+    "yes": "Yes",
+    "no": "No",
+    "active": "Active",
+    "inactive": "Inactive",
+    "required": "*",
+    "optional": "Optional",
+    "loading": "Loading...",
+    "noData": "No data yet",
+    "confirm": "Confirm",
+    "success": "Success",
+    "error": "Failed",
+    "name": "Name",
+    "address": "Address",
+    "phone": "Phone",
+    "notes": "Notes",
+    "date": "Date",
+    "total": "Total",
+    "price": "Price",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "customer": "Customer",
+    "supplier": "Supplier",
+    "product": "Product",
+    "stock": "Stock",
+    "payment": "Payment",
+    "category": "Category",
+    "setting": "Settings",
+    "locked": {
+      "accessDenied": "Access Denied",
+      "ownerMessage": "Your account should have full access. Try refreshing the app or check your account settings.",
+      "staffNoPermission": "You don't have permission to open",
+      "contactOwner": "Contact the store owner if you think this is wrong.",
+      "backToHome": "Back to Home"
+    },
+    "notFound": "Not found",
+    "selectPlaceholder": "Select...",
+    "searchPlaceholder": "Search...",
+    "installApp": "Install as App",
+    "installHint": "Open directly from home screen, no browser needed",
+    "howToInstall": "How to Install",
+    "storageUsed": "Storage Used"
+  },
+  "whatsNew": {
+    "title": "What's New in FreeKasir",
+    "slide": "Slide {{number}}",
+    "finish": "Done",
+    "skip": "Skip"
+  },
+  "error": {
+    "title": "An error occurred",
+    "description": "The application encountered an unexpected error. Try reloading the page. If it continues, copy the error details below and report to the developer.",
+    "details": "Error details",
+    "reload": "Reload",
+    "goHome": "Go to Home",
+    "copyDetails": "Copy details",
+    "copyPrompt": "Copy the following error details:"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oops! Page not found",
+    "returnHome": "Return to Home"
+  },
+  "index": {
+    "title": "Welcome to Your Blank App",
+    "description": "Start building your amazing project here!"
+  },
+  "themeColors": {
+    "blue": "Blue",
+    "orange": "Orange",
+    "green": "Green",
+    "purple": "Purple",
+    "red": "Red",
+    "pink": "Pink",
+    "teal": "Teal",
+    "yellow": "Yellow"
+  }
+}

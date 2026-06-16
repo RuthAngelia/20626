@@ -18,9 +18,16 @@ import { shouldShowUserTypeSurvey } from '@/lib/user-type';
 import { toast } from 'sonner';
 import { isNativePlatform, printRawNativeBluetooth, getDailyReportESCPOSData, type DailyReportPrintData } from '@/lib/printer';
 import DailyReportReceipt from '@/components/reports/DailyReportReceipt';
+import { useTranslation } from 'react-i18next';
+
+const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'RM' };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 export default function Laporan() {
   const { can, currentUser } = useAuth();
+  const { t, i18n } = useTranslation('reports');
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
+  const currencySymbol = CURRENCY_SYMBOL[i18n.language] ?? 'Rp';
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
   const [period, setPeriod] = useState<'daily' | '7' | '30'>('daily');
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -76,7 +83,7 @@ export default function Laporan() {
   const paymentMethods = useLiveQuery(() => db.paymentMethods.toArray());
 
   if (!can('view_reports')) {
-    return <LockedPage title="Laporan" permissionLabel="Lihat Laporan & Profit" />;
+    return <LockedPage title={t('locked.title')} permissionLabel={t('locked.permissionLabel')} />;
   }
 
   const allItems = txItems ?? [];
@@ -103,7 +110,7 @@ export default function Laporan() {
   const expenseByCategory: Record<string, { name: string; icon: string; color: string; amount: number }> = {};
   expenses?.forEach(e => {
     const cat = expenseCategories?.find(c => c.id === e.categoryId);
-    const key = cat?.name ?? 'Tanpa kategori';
+    const key = cat?.name ?? t('fallbacks.uncategorized');
     if (!expenseByCategory[key]) {
       expenseByCategory[key] = {
         name: key,
@@ -151,20 +158,20 @@ export default function Laporan() {
     if (t.paymentAmount <= 0) return;
     const method = paymentMethods?.find(p => p.id === t.paymentMethodId);
     const key = t.paymentMethodId ?? 0;
-    if (!paymentSummary[key]) paymentSummary[key] = { name: method?.name ?? 'Tanpa metode', amount: 0, count: 0 };
+    if (!paymentSummary[key]) paymentSummary[key] = { name: method?.name ?? t('fallbacks.noMethod'), amount: 0, count: 0 };
     paymentSummary[key].amount += Math.min(t.paymentAmount, t.total);
     paymentSummary[key].count += 1;
   });
   debtPayments?.forEach((payment) => {
     const method = paymentMethods?.find((item) => item.id === payment.paymentMethodId);
     const key = payment.paymentMethodId;
-    if (!paymentSummary[key]) paymentSummary[key] = { name: method?.name ?? 'Metode dihapus', amount: 0, count: 0 };
+    if (!paymentSummary[key]) paymentSummary[key] = { name: method?.name ?? t('fallbacks.deletedMethod'), amount: 0, count: 0 };
     paymentSummary[key].amount += payment.amount;
     paymentSummary[key].count += 1;
   });
   const paymentBreakdown = Object.values(paymentSummary).sort((a, b) => b.amount - a.amount);
 
-  const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
+  const rp = (n: number) => `${currencySymbol} ${n.toLocaleString(numberLocale)}`;
 
   const handlePrintDailyReport = () => {
     const itemsCount = allItems.reduce((s, item) => s + item.quantity, 0);
@@ -189,7 +196,7 @@ export default function Laporan() {
         revenue: p.revenue
       })),
       storeSettings,
-      cashierName: currentUser?.name || 'Owner',
+      cashierName: currentUser?.name || t('fallbacks.owner'),
       includeExpenses,
       expensesAmount: appliedExpenses,
       netProfit: netProfit
@@ -204,10 +211,10 @@ export default function Laporan() {
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-primary" />
-          Laporan
+          {t('title')}
         </h1>
         <Button size="sm" variant="outline" className="h-9 gap-1.5" onClick={() => setExportOpen(true)}>
-          <Download className="w-4 h-4" /> Export
+          <Download className="w-4 h-4" /> {t('export')}
         </Button>
       </div>
 
@@ -230,9 +237,9 @@ export default function Laporan() {
 
       <Tabs value={period} onValueChange={v => setPeriod(v as 'daily' | '7' | '30')}>
         <TabsList className="w-full">
-          <TabsTrigger value="daily" className="flex-1">Harian</TabsTrigger>
-          <TabsTrigger value="7" className="flex-1">7 Hari</TabsTrigger>
-          <TabsTrigger value="30" className="flex-1">30 Hari</TabsTrigger>
+          <TabsTrigger value="daily" className="flex-1">{t('tabs.daily')}</TabsTrigger>
+          <TabsTrigger value="7" className="flex-1">{t('tabs.7days')}</TabsTrigger>
+          <TabsTrigger value="30" className="flex-1">{t('tabs.30days')}</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -240,7 +247,7 @@ export default function Laporan() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="report-date" className="text-xs">Tanggal Laporan</Label>
+              <Label htmlFor="report-date" className="text-xs">{t('daily.reportDate')}</Label>
               <Input
                 id="report-date"
                 type="date"
@@ -250,8 +257,8 @@ export default function Laporan() {
             </div>
             <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
               <div>
-                <Label htmlFor="include-expenses" className="text-sm font-medium">Masukkan pengeluaran</Label>
-                <p className="text-[10px] text-muted-foreground">Pengeluaran akan mengurangi laba bersih</p>
+                <Label htmlFor="include-expenses" className="text-sm font-medium">{t('daily.includeExpenses')}</Label>
+                <p className="text-[10px] text-muted-foreground">{t('daily.includeExpensesHint')}</p>
               </div>
               <Switch id="include-expenses" checked={includeExpenses} onCheckedChange={setIncludeExpenses} />
             </div>
@@ -261,11 +268,11 @@ export default function Laporan() {
               disabled={txCount === 0}
             >
               <Printer className="w-4 h-4" />
-              Cetak Laporan Closing
+              {t('daily.printClosingReport')}
             </Button>
             {txCount === 0 && (
               <p className="text-[10px] text-destructive text-center mt-1.5 font-medium">
-                * Belum ada transaksi penjualan pada tanggal terpilih
+                {t('daily.noSalesSelectedDate')}
               </p>
             )}
           </CardContent>
@@ -277,21 +284,21 @@ export default function Laporan() {
           <CardContent className="p-3 text-center">
             <ShoppingCart className="w-4 h-4 mx-auto text-primary mb-1" />
             <p className="text-lg font-bold">{txCount}</p>
-            <p className="text-[10px] text-muted-foreground">Transaksi</p>
+            <p className="text-[10px] text-muted-foreground">{t('summary.transactions')}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-3 text-center">
             <TrendingUp className="w-4 h-4 mx-auto text-success mb-1" />
             <p className="text-sm font-bold">{rp(totalSales)}</p>
-            <p className="text-[10px] text-muted-foreground">Penjualan</p>
+            <p className="text-[10px] text-muted-foreground">{t('summary.sales')}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-3 text-center">
             <TrendingUp className="w-4 h-4 mx-auto text-accent mb-1" />
             <p className="text-sm font-bold">{rp(totalProfit)}</p>
-            <p className="text-[10px] text-muted-foreground">Profit</p>
+            <p className="text-[10px] text-muted-foreground">{t('summary.profit')}</p>
           </CardContent>
         </Card>
       </div>
@@ -301,32 +308,32 @@ export default function Laporan() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-1.5">
               <CreditCard className="w-4 h-4" />
-              Total Penjualan Harian
+              {t('dailySales.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-[10px] text-muted-foreground">Total Omzet</p>
+                <p className="text-[10px] text-muted-foreground">{t('dailySales.grossSales')}</p>
                 <p className="text-sm font-bold">{rp(totalSales)}</p>
               </div>
               <div className="rounded-lg bg-success/10 p-3">
-                <p className="text-[10px] text-muted-foreground">Kas Masuk</p>
+                <p className="text-[10px] text-muted-foreground">{t('dailySales.cashIn')}</p>
                 <p className="text-sm font-bold text-success">{rp(totalCashIn)}</p>
               </div>
               <div className="rounded-lg bg-muted/50 p-3">
-                <p className="text-[10px] text-muted-foreground">Rata-rata Transaksi</p>
+                <p className="text-[10px] text-muted-foreground">{t('dailySales.avgTransaction')}</p>
                 <p className="text-xs font-bold">{rp(averageTransaction)}</p>
               </div>
             </div>
             <div className="space-y-2">
               {paymentBreakdown.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2 text-center">Belum ada penjualan</p>
+                <p className="text-xs text-muted-foreground py-2 text-center">{t('dailySales.noSales')}</p>
               ) : paymentBreakdown.map(method => (
                 <div key={method.name} className="flex items-center justify-between text-sm">
                   <div>
                     <p className="font-medium">{method.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{method.count} transaksi</p>
+                    <p className="text-[10px] text-muted-foreground">{t('dailySales.transactionCount', { count: method.count })}</p>
                   </div>
                   <p className="font-bold">{rp(method.amount)}</p>
                 </div>
@@ -340,14 +347,14 @@ export default function Laporan() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-1.5">
             <DollarSign className="w-4 h-4" />
-            Laba Rugi{period === 'daily' ? ' Harian' : ''}
+            {t(period === 'daily' ? 'pl.daily' : 'pl.title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between items-center text-sm">
             <div className="flex items-center gap-2">
               <ArrowUp className="w-3.5 h-3.5 text-success" />
-              <span>Pendapatan Kotor</span>
+              <span>{t('pl.grossRevenue')}</span>
             </div>
             <span className="font-semibold">{rp(totalRevenue)}</span>
           </div>
@@ -355,45 +362,45 @@ export default function Laporan() {
             <div className="flex justify-between items-center text-sm text-destructive">
               <div className="flex items-center gap-2">
                 <Minus className="w-3.5 h-3.5" />
-                <span>Diskon</span>
+                <span>{t('pl.discount')}</span>
               </div>
               <span className="font-semibold">-{rp(totalDiscount)}</span>
             </div>
           )}
           <div className="flex justify-between items-center text-sm border-t pt-2">
-            <span className="font-medium">Penjualan Bersih</span>
+            <span className="font-medium">{t('pl.netSales')}</span>
             <span className="font-bold">{rp(netSales)}</span>
           </div>
           <div className="flex justify-between items-center text-sm text-destructive">
             <div className="flex items-center gap-2">
               <ArrowDown className="w-3.5 h-3.5" />
-              <span>HPP (Modal)</span>
+              <span>{t('pl.cogs')}</span>
             </div>
             <span className="font-semibold">-{rp(totalHpp)}</span>
           </div>
           <div className="flex justify-between items-center text-base border-t pt-2">
-            <span className="font-bold">Laba Kotor</span>
+            <span className="font-bold">{t('pl.grossProfit')}</span>
             <span className={`font-bold ${grossProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{rp(grossProfit)}</span>
           </div>
           <div className="flex justify-between items-center text-xs text-muted-foreground">
-            <span>Margin Kotor</span>
+            <span>{t('pl.grossMargin')}</span>
             <span className="font-semibold">{marginPercent.toFixed(1)}%</span>
           </div>
           {totalExpenses > 0 && (
             <div className={`flex justify-between items-center text-sm ${includeExpenses ? 'text-warning' : 'text-muted-foreground'}`}>
               <div className="flex items-center gap-2">
                 <Wallet className="w-3.5 h-3.5" />
-                <span>Pengeluaran Operasional{!includeExpenses ? ' (tidak dihitung)' : ''}</span>
+                <span>{t('pl.operationalExpenses')}{!includeExpenses ? t('pl.notIncluded') : ''}</span>
               </div>
               <span className="font-semibold">-{rp(totalExpenses)}</span>
             </div>
           )}
           <div className="flex justify-between items-center text-base border-t pt-2">
-            <span className="font-bold">Laba Bersih</span>
+            <span className="font-bold">{t('pl.netProfit')}</span>
             <span className={`font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{rp(netProfit)}</span>
           </div>
           <div className="flex justify-between items-center text-xs text-muted-foreground">
-            <span>Margin Bersih</span>
+            <span>{t('pl.netMargin')}</span>
             <span className="font-semibold">{netMarginPercent.toFixed(1)}%</span>
           </div>
         </CardContent>
@@ -404,7 +411,7 @@ export default function Laporan() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center gap-1.5">
               <Wallet className="w-4 h-4" />
-              Pengeluaran per Kategori
+              {t('expenses.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -437,14 +444,14 @@ export default function Laporan() {
       {period !== 'daily' && (
         <Card className="border-0 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Tren Penjualan</CardTitle>
+            <CardTitle className="text-sm">{t('chart.title')}</CardTitle>
           </CardHeader>
           <CardContent className="pb-4">
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={chartData}>
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip formatter={(v: number) => [`Rp ${v.toLocaleString('id-ID')}`, 'Penjualan']} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Tooltip formatter={(v: number) => [`${currencySymbol} ${v.toLocaleString(numberLocale)}`, t('chart.tooltipLabel')]} contentStyle={{ fontSize: 12, borderRadius: 8 }} />
                 <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -456,12 +463,12 @@ export default function Laporan() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-1.5">
             <Package className="w-4 h-4" />
-            Produk Terlaris{period === 'daily' ? ' Harian' : ''}
+            {t(period === 'daily' ? 'products.daily' : 'products.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {topProducts.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">Belum ada data penjualan</p>
+            <p className="text-xs text-muted-foreground py-4 text-center">{t('products.noData')}</p>
           ) : (
             <div className="space-y-2">
               {topProducts.map((p, i) => (
@@ -472,7 +479,7 @@ export default function Laporan() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs font-bold">{rp(p.revenue)}</p>
-                    <p className="text-[10px] text-muted-foreground">{p.qty} terjual · laba {rp(p.profit)}</p>
+                    <p className="text-[10px] text-muted-foreground">{t('products.sold', { qty: p.qty, profit: rp(p.profit) })}</p>
                   </div>
                 </div>
               ))}

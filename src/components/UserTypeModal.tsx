@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Store, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -20,21 +21,44 @@ interface UserTypeModalProps {
   onClose: () => void;
 }
 
+const BUSINESS_TYPE_KEYS = [
+  'groceryStore',
+  'coffeeShop',
+  'cafeResto',
+  'clothingStore',
+  'grocery',
+  'pharmacy',
+  'hardwareStore',
+  'electronics',
+  'salonBarbershop',
+  'laundry',
+  'onlineSeller',
+  'other',
+] as const;
+
+const OTHER_VALUE = 'Lainnya';
+
 /**
- * Survei jenis usaha. Muncul saat membuka Laporan bila belum dijawab.
+ * Survei jenis usaha. Muncul saat user membuka halaman Laporan bila belum dijawab.
  * Boleh di-skip; setelah {@link SKIP_LIMIT} kali skip, tampilkan opsi
  * "Jangan tampilkan lagi".
  */
 export default function UserTypeModal({ open, onClose }: UserTypeModalProps) {
+  const { t } = useTranslation('reports');
   const [selected, setSelected] = useState<string | null>(null);
   const [otherText, setOtherText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const options = useMemo(
+    () => BUSINESS_TYPES.map((value, i) => ({ value, label: t(`survey.types.${BUSINESS_TYPE_KEYS[i]}`) })),
+    [t],
+  );
 
   // Snapshot saat render: bila sudah melewati batas skip, tawarkan opsi
   // untuk tidak menampilkan lagi.
   const offerDontShowAgain = getSkipCount() >= SKIP_LIMIT;
 
-  const isOther = selected === 'Lainnya';
+  const isOther = selected === OTHER_VALUE;
   // Saat "Lainnya", value yang dikirim adalah teks bebas yang diisi user.
   const value = isOther ? otherText.trim() : selected;
   const canSubmit = !!value && !submitting;
@@ -47,7 +71,7 @@ export default function UserTypeModal({ open, onClose }: UserTypeModalProps) {
     markUserTypeAnswered(); // tandai dulu agar tidak muncul lagi meski request gagal
     void submitUserType(value);
     setSubmitting(false);
-    toast.success('Terima kasih atas masukannya! 🙏');
+    toast.success(t('survey.thankYou'));
     onClose();
   };
 
@@ -69,27 +93,27 @@ export default function UserTypeModal({ open, onClose }: UserTypeModalProps) {
             <Store className="w-7 h-7" />
           </div>
           <h2 className="text-base font-bold leading-snug">
-            Jenis usaha yang Anda jalankan menggunakan aplikasi FreeKasir ini
+            {t('survey.title')}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Bantu kami memahami kebutuhanmu dengan memilih salah satu.
+            {t('survey.description')}
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-2 max-h-[40vh] overflow-y-auto">
-          {BUSINESS_TYPES.map((type) => (
+          {options.map(({ value, label }) => (
             <button
-              key={type}
+              key={value}
               type="button"
-              onClick={() => setSelected(type)}
+              onClick={() => setSelected(value)}
               className={cn(
                 'rounded-xl border px-3 py-2.5 text-xs font-medium text-left transition-colors',
-                selected === type
+                selected === value
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border hover:bg-muted',
               )}
             >
-              {type}
+              {label}
             </button>
           ))}
         </div>
@@ -103,7 +127,7 @@ export default function UserTypeModal({ open, onClose }: UserTypeModalProps) {
               if (e.key === 'Enter') handleSubmit();
             }}
             maxLength={60}
-            placeholder="Tulis jenis usaha Anda…"
+            placeholder={t('survey.otherPlaceholder')}
           />
         )}
 
@@ -114,7 +138,7 @@ export default function UserTypeModal({ open, onClose }: UserTypeModalProps) {
             onClick={handleSubmit}
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            Kirim
+            {t('survey.submit')}
           </Button>
           <Button
             variant="ghost"
@@ -122,7 +146,7 @@ export default function UserTypeModal({ open, onClose }: UserTypeModalProps) {
             onClick={handleSkip}
             disabled={submitting}
           >
-            Lewati
+            {t('survey.skip')}
           </Button>
           {offerDontShowAgain && (
             <Button
@@ -131,7 +155,7 @@ export default function UserTypeModal({ open, onClose }: UserTypeModalProps) {
               onClick={handleDontShowAgain}
               disabled={submitting}
             >
-              Jangan tampilkan lagi
+              {t('survey.dontShowAgain')}
             </Button>
           )}
         </div>

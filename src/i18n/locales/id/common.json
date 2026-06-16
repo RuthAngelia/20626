@@ -1,0 +1,100 @@
+{
+  "app": {
+    "name": "FreeKasir",
+    "tagline": "POS Gratis — Kelola Jualan Jadi Mudah 🇮🇩"
+  },
+  "nav": {
+    "home": "Beranda",
+    "products": "Produk",
+    "cashier": "Kasir",
+    "reports": "Laporan",
+    "more": "Lainnya"
+  },
+  "common": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "edit": "Edit",
+    "close": "Tutup",
+    "back": "Kembali",
+    "search": "Cari",
+    "filter": "Filter",
+    "all": "Semua",
+    "add": "Tambah",
+    "yes": "Ya",
+    "no": "Tidak",
+    "active": "Aktif",
+    "inactive": "Tidak Aktif",
+    "required": "*",
+    "optional": "Opsional",
+    "loading": "Memuat...",
+    "noData": "Belum ada data",
+    "confirm": "Konfirmasi",
+    "success": "Berhasil",
+    "error": "Gagal",
+    "name": "Nama",
+    "address": "Alamat",
+    "phone": "Telepon",
+    "notes": "Catatan",
+    "date": "Tanggal",
+    "total": "Total",
+    "price": "Harga",
+    "quantity": "Jumlah",
+    "unit": "Satuan",
+    "customer": "Pelanggan",
+    "supplier": "Supplier",
+    "product": "Produk",
+    "stock": "Stok",
+    "payment": "Pembayaran",
+    "category": "Kategori",
+    "setting": "Pengaturan",
+    "locked": {
+      "accessDenied": "Akses dikunci",
+      "ownerMessage": "Akun Anda seharusnya memiliki akses penuh. Coba refresh aplikasi atau periksa pengaturan akun.",
+      "staffNoPermission": "Anda tidak punya izin untuk membuka halaman",
+      "contactOwner": "Hubungi pemilik toko jika menurut Anda ini tidak benar.",
+      "backToHome": "Kembali ke Beranda"
+    },
+    "notFound": "Tidak ditemukan",
+    "selectPlaceholder": "Pilih...",
+    "searchPlaceholder": "Cari...",
+    "installApp": "Install sebagai Aplikasi",
+    "installHint": "Buka langsung dari home screen, tanpa browser",
+    "howToInstall": "Cara Install",
+    "storageUsed": "Penyimpanan Terpakai"
+  },
+  "whatsNew": {
+    "title": "Yang Baru di FreeKasir",
+    "slide": "Slide {{number}}",
+    "finish": "Selesai",
+    "skip": "Lewati"
+  },
+  "error": {
+    "title": "Terjadi kesalahan",
+    "description": "Aplikasi mengalami error yang tidak terduga. Coba muat ulang halaman. Jika masih terjadi, salin detail error di bawah dan laporkan ke developer.",
+    "details": "Detail error",
+    "reload": "Muat ulang",
+    "goHome": "Ke beranda",
+    "copyDetails": "Salin detail",
+    "copyPrompt": "Salin detail error berikut:"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oops! Halaman tidak ditemukan",
+    "returnHome": "Kembali ke Beranda"
+  },
+  "index": {
+    "title": "Welcome to Your Blank App",
+    "description": "Start building your amazing project here!"
+  },
+  "themeColors": {
+    "blue": "Biru",
+    "orange": "Oranye",
+    "green": "Hijau",
+    "purple": "Ungu",
+    "red": "Merah",
+    "pink": "Pink",
+    "teal": "Teal",
+    "yellow": "Kuning"
+  }
+}

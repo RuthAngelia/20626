@@ -21,19 +21,31 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { format, startOfDay, startOfMonth, subDays } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { id, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
+import { useTranslation } from 'react-i18next';
 
 type RangePreset = 'today' | '7' | '30' | 'month' | 'all';
 
-const RANGE_LABELS: Record<RangePreset, string> = {
-  today: 'Hari ini',
-  '7': '7 hari',
-  '30': '30 hari',
-  month: 'Bulan ini',
-  all: 'Semua',
+const CURRENCY_SYMBOL: Record<string, string> = {
+  id: 'Rp',
+  en: '$',
+  ms: 'RM',
+};
+
+const NUMBER_LOCALES: Record<string, string> = {
+  id: 'id-ID',
+  en: 'en-US',
+  ms: 'ms-MY',
+};
+
+const LOCALES: Record<string, Locale> = {
+  id,
+  en: enUS,
+  ms,
 };
 
 function rangeStart(range: RangePreset): Date | null {
@@ -52,10 +64,27 @@ function rangeStart(range: RangePreset): Date | null {
   }
 }
 
-const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
-
 export default function ExpensesPage() {
   const { currentUser, can } = useAuth();
+  const { t, i18n } = useTranslation('settings');
+
+  const lang = i18n.language?.split('-')[0] || 'id';
+  const dateLocale = LOCALES[lang] || id;
+  const numberLocale = NUMBER_LOCALES[lang] || 'id-ID';
+  const currencySymbol = CURRENCY_SYMBOL[lang] || 'Rp';
+
+  const rp = (n: number) => `${currencySymbol} ${n.toLocaleString(numberLocale)}`;
+
+  const rangeKeyToLabel = (r: RangePreset): string => {
+    const key: Record<RangePreset, string> = {
+      today: 'expenses.range.today',
+      '7': 'expenses.range.last7',
+      '30': 'expenses.range.last30',
+      month: 'expenses.range.thisMonth',
+      all: 'expenses.range.all',
+    };
+    return t(key[r]);
+  };
 
   const [range, setRange] = useState<RangePreset>('30');
   const [filterCategoryId, setFilterCategoryId] = useState<string>('all');
@@ -139,23 +168,23 @@ export default function ExpensesPage() {
     const trimmedTitle = title.trim();
     const numericAmount = Number(amount);
     if (!trimmedTitle) {
-      toast.error('Judul pengeluaran wajib diisi');
+      toast.error(t('expenses.toast.titleRequired'));
       return;
     }
     if (!categoryId) {
-      toast.error('Pilih kategori');
+      toast.error(t('expenses.toast.categoryRequired'));
       return;
     }
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-      toast.error('Nominal harus lebih dari 0');
+      toast.error(t('expenses.toast.amountInvalid'));
       return;
     }
     if (!paymentMethodId) {
-      toast.error('Pilih metode pembayaran');
+      toast.error(t('expenses.toast.methodRequired'));
       return;
     }
     if (!date) {
-      toast.error('Pilih tanggal');
+      toast.error(t('expenses.toast.dateRequired'));
       return;
     }
 
@@ -172,7 +201,7 @@ export default function ExpensesPage() {
           date: expenseDate,
           notes: notes.trim() || undefined,
         });
-        toast.success('Pengeluaran diperbarui');
+        toast.success(t('expenses.toast.updated'));
       } else {
         await db.expenses.add({
           title: trimmedTitle,
@@ -186,11 +215,11 @@ export default function ExpensesPage() {
           isDeleted: 0,
           deletedAt: null,
         });
-        toast.success('Pengeluaran dicatat');
+        toast.success(t('expenses.toast.added'));
       }
       setDialogOpen(false);
     } catch {
-      toast.error('Gagal menyimpan pengeluaran');
+      toast.error(t('expenses.toast.saveFailed'));
     }
   };
 
@@ -200,14 +229,14 @@ export default function ExpensesPage() {
       isDeleted: 1,
       deletedAt: new Date(),
     });
-    toast.success('Pengeluaran dihapus');
+    toast.success(t('expenses.toast.deleted'));
     setDeleteTarget(null);
   };
 
   // === Permission gates ===
 
   if (!canView) {
-    return <LockedPage title="Pengeluaran" permissionLabel="Lihat Pengeluaran" />;
+    return <LockedPage title={t('expenses.locked.title')} permissionLabel={t('expenses.locked.permissionLabel')} />;
   }
 
   // === Render ===
@@ -226,19 +255,19 @@ export default function ExpensesPage() {
           </Link>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Wallet className="w-5 h-5 text-warning" />
-            Pengeluaran
+            {t('expenses.title')}
           </h1>
         </div>
         {canManage && (
           <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
-            <Plus className="w-4 h-4" /> Tambah
+            <Plus className="w-4 h-4" /> {t('expenses.add')}
           </Button>
         )}
       </div>
 
       {/* Range filter */}
       <div className="flex flex-wrap gap-2">
-        {(Object.keys(RANGE_LABELS) as RangePreset[]).map((r) => (
+        {(['today', '7', '30', 'month', 'all'] as RangePreset[]).map((r) => (
           <button
             key={r}
             onClick={() => setRange(r)}
@@ -248,7 +277,7 @@ export default function ExpensesPage() {
                 : 'border-muted bg-background text-muted-foreground'
             }`}
           >
-            {RANGE_LABELS[r]}
+            {rangeKeyToLabel(r)}
           </button>
         ))}
       </div>
@@ -261,10 +290,12 @@ export default function ExpensesPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Total Pengeluaran ({RANGE_LABELS[range]})
+              {t('expenses.summary.totalExpenses', { range: rangeKeyToLabel(range) })}
             </p>
             <p className="text-lg font-bold">{rp(totalAmount)}</p>
-            <p className="text-[10px] text-muted-foreground">{filtered.length} catatan</p>
+            <p className="text-[10px] text-muted-foreground">
+              {t('expenses.summary.count', { count: filtered.length })}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -273,10 +304,10 @@ export default function ExpensesPage() {
       <div className="flex items-center gap-2">
         <Select value={filterCategoryId} onValueChange={setFilterCategoryId}>
           <SelectTrigger className="h-10 flex-1">
-            <SelectValue placeholder="Filter kategori" />
+            <SelectValue placeholder={t('expenses.categoryFilter.placeholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Semua kategori</SelectItem>
+            <SelectItem value="all">{t('expenses.categoryFilter.all')}</SelectItem>
             {categories?.map((c) => (
               <SelectItem key={c.id} value={String(c.id)}>
                 {c.icon} {c.name}
@@ -290,7 +321,7 @@ export default function ExpensesPage() {
             size="icon"
             className="h-10 w-10 shrink-0"
             onClick={() => setFilterCategoryId('all')}
-            title="Hapus filter"
+            title={t('expenses.clearFilter')}
           >
             <FilterX className="w-4 h-4" />
           </Button>
@@ -303,8 +334,8 @@ export default function ExpensesPage() {
           <Wallet className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
           <p className="text-sm text-muted-foreground">
             {expenses && expenses.length === 0
-              ? 'Belum ada pengeluaran tercatat'
-              : 'Tidak ada pengeluaran sesuai filter'}
+              ? t('expenses.empty.none')
+              : t('expenses.empty.filtered')}
           </p>
         </div>
       ) : (
@@ -335,7 +366,7 @@ export default function ExpensesPage() {
                       </div>
                       <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
                         <Calendar className="w-3 h-3" />
-                        <span>{format(new Date(exp.date), 'dd MMM yyyy', { locale: idLocale })}</span>
+                        <span>{format(new Date(exp.date), 'dd MMM yyyy', { locale: dateLocale })}</span>
                       </div>
                       {exp.notes && (
                         <p className="text-[11px] text-muted-foreground mt-1 italic line-clamp-2">
@@ -350,7 +381,7 @@ export default function ExpensesPage() {
                             className="h-7 px-2 text-xs gap-1"
                             onClick={() => openEdit(exp)}
                           >
-                            <Edit2 className="w-3 h-3" /> Edit
+                            <Edit2 className="w-3 h-3" /> {t('expenses.edit')}
                           </Button>
                           <Button
                             variant="ghost"
@@ -358,7 +389,7 @@ export default function ExpensesPage() {
                             className="h-7 px-2 text-xs text-destructive gap-1"
                             onClick={() => setDeleteTarget(exp)}
                           >
-                            <Trash2 className="w-3 h-3" /> Hapus
+                            <Trash2 className="w-3 h-3" /> {t('expenses.delete')}
                           </Button>
                         </div>
                       )}
@@ -375,39 +406,39 @@ export default function ExpensesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Edit Pengeluaran' : 'Tambah Pengeluaran'}</DialogTitle>
+            <DialogTitle>
+              {editing ? t('expenses.dialog.editTitle') : t('expenses.dialog.addTitle')}
+            </DialogTitle>
           </DialogHeader>
 
           {(noCategories || noPaymentMethods) && (
             <div className="rounded-xl bg-warning/10 border border-warning/30 p-3 text-xs text-foreground">
               {noCategories && (
-                <p>
-                  Belum ada kategori pengeluaran. Tambahkan dulu di Pengaturan.
-                </p>
+                <p>{t('expenses.dialog.missingCategories')}</p>
               )}
               {noPaymentMethods && (
-                <p>Belum ada metode pembayaran. Tambahkan dulu di Pengaturan.</p>
+                <p>{t('expenses.dialog.missingPaymentMethods')}</p>
               )}
             </div>
           )}
 
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label>Judul *</Label>
+              <Label>{t('expenses.dialog.titleLabel')}</Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Contoh: Bayar listrik bulan ini"
+                placeholder={t('expenses.dialog.titlePlaceholder')}
                 className="h-11"
                 maxLength={120}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Kategori *</Label>
+              <Label>{t('expenses.dialog.categoryLabel')}</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
                 <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Pilih kategori" />
+                  <SelectValue placeholder={t('expenses.dialog.categoryPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {categories?.map((c) => (
@@ -421,19 +452,19 @@ export default function ExpensesPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Nominal *</Label>
+                <Label>{t('expenses.dialog.amountLabel')}</Label>
                 <Input
                   type="number"
                   inputMode="numeric"
                   min={0}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="50000"
+                  placeholder={t('expenses.dialog.amountPlaceholder')}
                   className="h-11"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Tanggal *</Label>
+                <Label>{t('expenses.dialog.dateLabel')}</Label>
                 <Input
                   type="date"
                   value={date}
@@ -444,10 +475,10 @@ export default function ExpensesPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Metode Pembayaran *</Label>
+              <Label>{t('expenses.dialog.methodLabel')}</Label>
               <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
                 <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Pilih metode" />
+                  <SelectValue placeholder={t('expenses.dialog.methodPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {paymentMethods?.map((pm) => (
@@ -460,11 +491,11 @@ export default function ExpensesPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Catatan</Label>
+              <Label>{t('expenses.dialog.notesLabel')}</Label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Opsional"
+                placeholder={t('expenses.dialog.notesPlaceholder')}
                 rows={3}
                 className="resize-none"
               />
@@ -475,7 +506,7 @@ export default function ExpensesPage() {
               onClick={handleSave}
               disabled={noCategories || noPaymentMethods}
             >
-              {editing ? 'Simpan Perubahan' : 'Catat Pengeluaran'}
+              {editing ? t('expenses.dialog.saveButton') : t('expenses.dialog.addButton')}
             </Button>
           </div>
         </DialogContent>
@@ -485,19 +516,21 @@ export default function ExpensesPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus pengeluaran?</AlertDialogTitle>
+            <AlertDialogTitle>{t('expenses.deleteDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deleteTarget?.title}" sebesar {deleteTarget && rp(deleteTarget.amount)} akan dihapus.
-              Catatan ini tidak akan masuk ke laporan.
+              {t('expenses.deleteDialog.description', {
+                title: deleteTarget?.title ?? '',
+                amount: deleteTarget ? rp(deleteTarget.amount) : '',
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel>{t('expenses.deleteDialog.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Hapus
+              {t('expenses.deleteDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

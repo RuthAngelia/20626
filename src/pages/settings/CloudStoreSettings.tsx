@@ -21,9 +21,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { id as idLocale, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 import { useCloudAuth } from '@/hooks/use-cloud-auth';
+import { useTranslation } from 'react-i18next';
 import {
   fetchStores,
   createStore,
@@ -32,9 +35,13 @@ import {
   type CloudStore,
 } from '@/lib/cloud-api';
 
+const LOCALES: Record<string, Locale> = { id: idLocale, en: enUS, ms };
+
 export default function CloudStoreSettings() {
   const { can } = useAuth();
   const { isLoggedIn, isSyncSubscribed, profile } = useCloudAuth();
+  const { t, i18n } = useTranslation('settings');
+  const dateLocale = LOCALES[i18n.language] ?? idLocale;
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
 
   // Batas jumlah toko sesuai paket sync aktif.
@@ -80,26 +87,26 @@ export default function CloudStoreSettings() {
   }, [loading, stores.length, isSyncSubscribed, atLimit, storeSettings?.storeName]);
 
   if (!can('manage_backup')) {
-    return <LockedPage title="Kelola Toko" permissionLabel="Kelola Backup" />;
+    return <LockedPage title={t('cloudStore.locked.title')} permissionLabel={t('cloudStore.locked.permissionLabel')} />;
   }
 
   const handleBind = async (storeId: string) => {
     if (!storeSettings?.id) return;
     await db.storeSettings.update(storeSettings.id, { cloudStoreId: storeId });
-    toast.success('Device ini terhubung ke toko.');
+    toast.success(t('cloudStore.toast.bind'));
   };
 
   const handleUnbind = async () => {
     if (!storeSettings?.id) return;
     await db.storeSettings.update(storeSettings.id, { cloudStoreId: null });
-    toast.success('Device terputus dari toko.');
+    toast.success(t('cloudStore.toast.unbind'));
   };
 
   const handleCreate = async () => {
     const name = newName.trim();
     if (!name) return;
     if (atLimit) {
-      toast.error('Batas toko paketmu sudah penuh. Upgrade paket untuk menambah toko.');
+      toast.error(t('cloudStore.toast.atLimit'));
       return;
     }
     setBusy('create');
@@ -111,12 +118,12 @@ export default function CloudStoreSettings() {
       // Auto-bind jika ini toko pertama
       if (stores.length === 0 && storeSettings?.id) {
         await db.storeSettings.update(storeSettings.id, { cloudStoreId: store.id });
-        toast.success('Toko dibuat dan device otomatis terhubung.');
+        toast.success(t('cloudStore.toast.createBound'));
       } else {
-        toast.success('Toko berhasil dibuat.');
+        toast.success(t('cloudStore.toast.create'));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal membuat toko');
+      toast.error(err instanceof Error ? err.message : t('cloudStore.toast.createFailed'));
     } finally {
       setBusy(null);
     }
@@ -131,9 +138,9 @@ export default function CloudStoreSettings() {
       setStores((prev) => prev.map((s) => (s.id === id ? updated : s)));
       setEditingId(null);
       setEditName('');
-      toast.success('Nama toko diperbarui.');
+      toast.success(t('cloudStore.toast.rename'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal mengubah nama toko');
+      toast.error(err instanceof Error ? err.message : t('cloudStore.toast.renameFailed'));
     } finally {
       setBusy(null);
     }
@@ -149,13 +156,15 @@ export default function CloudStoreSettings() {
       if (activeStoreId === id && storeSettings?.id) {
         await db.storeSettings.update(storeSettings.id, { cloudStoreId: null });
       }
-      toast.success('Toko dan semua data sync-nya dihapus.');
+      toast.success(t('cloudStore.toast.delete'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal menghapus toko');
+      toast.error(err instanceof Error ? err.message : t('cloudStore.toast.deleteFailed'));
     } finally {
       setBusy(null);
     }
   };
+
+  const activeStoreName = stores.find((s) => s.id === activeStoreId)?.name ?? t('cloudStore.loading');
 
   return (
     <div className="px-4 pt-6 pb-20 space-y-4">
@@ -165,14 +174,14 @@ export default function CloudStoreSettings() {
         </Link>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Store className="w-5 h-5 text-primary" />
-          Kelola Toko
+          {t('cloudStore.title')}
         </h1>
       </div>
 
       {!isLoggedIn || !isSyncSubscribed ? (
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 text-center text-sm text-muted-foreground">
-            Langganan Cloud Sync diperlukan untuk mengelola toko.
+            {t('cloudStore.requiresSubscription')}
           </CardContent>
         </Card>
       ) : (
@@ -183,13 +192,13 @@ export default function CloudStoreSettings() {
               <CardContent className="p-3 flex items-center gap-2">
                 <Link2 className="w-4 h-4 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-muted-foreground">Device ini terhubung ke:</p>
+                  <p className="text-[11px] text-muted-foreground">{t('cloudStore.activeDevice')}</p>
                   <p className="text-sm font-semibold truncate">
-                    {stores.find((s) => s.id === activeStoreId)?.name ?? 'Memuat...'}
+                    {activeStoreName}
                   </p>
                 </div>
                 <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={handleUnbind}>
-                  Putuskan
+                  {t('cloudStore.disconnect')}
                 </Button>
               </CardContent>
             </Card>
@@ -200,10 +209,13 @@ export default function CloudStoreSettings() {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold">Daftar Toko</p>
+                  <p className="text-sm font-semibold">{t('cloudStore.storeList')}</p>
                   {maxStores != null && (
                     <p className="text-[10px] text-muted-foreground">
-                      {stores.length} dari {isUnlimited ? 'tak terbatas' : `${maxStores} toko`} terpakai
+                      {t('cloudStore.used', {
+                        used: stores.length,
+                        max: isUnlimited ? t('cloudStore.unlimited') : `${maxStores} ${t('cloudStore.stats.stores')}`,
+                      })}
                     </p>
                   )}
                 </div>
@@ -214,7 +226,7 @@ export default function CloudStoreSettings() {
                     className="h-8 gap-1 text-xs shrink-0"
                     onClick={() => { setShowCreate(true); setNewName(''); }}
                   >
-                    <Plus className="w-3.5 h-3.5" /> Tambah
+                    <Plus className="w-3.5 h-3.5" /> {t('cloudStore.addButton')}
                   </Button>
                 )}
               </div>
@@ -223,12 +235,12 @@ export default function CloudStoreSettings() {
                 <div className="rounded-lg bg-warning/10 border border-warning/30 p-2.5 flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                   <div className="min-w-0">
-                    <p className="text-[11px] font-medium text-foreground">Batas toko paketmu sudah penuh</p>
+                    <p className="text-[11px] font-medium text-foreground">{t('cloudStore.atLimit.title')}</p>
                     <p className="text-[10px] text-muted-foreground leading-snug">
-                      Paket saat ini hanya mengizinkan {maxStores} toko. Upgrade paket Cloud Sync untuk menambah toko.
+                      {t('cloudStore.atLimit.description', { max: maxStores })}
                     </p>
                     <Link to="/settings/cloud-backup" className="inline-block mt-1.5">
-                      <Button size="sm" variant="outline" className="h-7 text-[11px]">Upgrade Paket</Button>
+                      <Button size="sm" variant="outline" className="h-7 text-[11px]">{t('cloudStore.atLimit.upgrade')}</Button>
                     </Link>
                   </div>
                 </div>
@@ -239,7 +251,7 @@ export default function CloudStoreSettings() {
                   <Loader2 className="w-5 h-5 animate-spin" />
                 </div>
               ) : stores.length === 0 && !showCreate ? (
-                <p className="text-xs text-muted-foreground text-center py-3">Belum ada toko. Buat toko pertamamu.</p>
+                <p className="text-xs text-muted-foreground text-center py-3">{t('cloudStore.noStore')}</p>
               ) : (
                 <div className="space-y-2">
                   {stores.map((store) => {
@@ -268,16 +280,16 @@ export default function CloudStoreSettings() {
                               disabled={!editName.trim() || busy === `rename:${store.id}`}
                               onClick={() => handleRename(store.id)}
                             >
-                              {busy === `rename:${store.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Simpan'}
+                              {busy === `rename:${store.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : t('cloudStore.save')}
                             </Button>
                             <Button size="sm" variant="ghost" className="h-9" onClick={() => setEditingId(null)}>
-                              Batal
+                              {t('cloudStore.cancel')}
                             </Button>
                           </div>
                         ) : isDeleting ? (
                           <div className="space-y-2">
                             <p className="text-xs text-destructive font-medium">
-                              Hapus "{store.name}"? Semua data sync (produk, transaksi, dll.) akan dihapus permanen dari cloud.
+                              {t('cloudStore.deleteConfirm', { name: store.name })}
                             </p>
                             <div className="flex gap-2">
                               <Button
@@ -287,10 +299,10 @@ export default function CloudStoreSettings() {
                                 disabled={busy === `delete:${store.id}`}
                                 onClick={() => handleDelete(store.id)}
                               >
-                                {busy === `delete:${store.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Ya, hapus'}
+                                {busy === `delete:${store.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : t('cloudStore.yesDelete')}
                               </Button>
                               <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setConfirmDeleteId(null)}>
-                                Batal
+                                {t('cloudStore.cancel')}
                               </Button>
                             </div>
                           </div>
@@ -309,7 +321,7 @@ export default function CloudStoreSettings() {
                                     className="h-7 text-xs gap-1"
                                     onClick={() => handleBind(store.id)}
                                   >
-                                    <Link2 className="w-3 h-3" /> Hubungkan
+                                    <Link2 className="w-3 h-3" /> {t('cloudStore.connect')}
                                   </Button>
                                 )}
                                 <Button
@@ -332,13 +344,13 @@ export default function CloudStoreSettings() {
                             </div>
                             {counts && (
                               <div className="flex gap-3 text-[10px] text-muted-foreground">
-                                <span className="flex items-center gap-1"><Package className="w-3 h-3" />{counts.products} produk</span>
-                                <span className="flex items-center gap-1"><ShoppingCart className="w-3 h-3" />{counts.storeTransactions} transaksi</span>
-                                <span className="flex items-center gap-1"><HardDrive className="w-3 h-3" />{counts.backups} backup</span>
+                                <span className="flex items-center gap-1"><Package className="w-3 h-3" />{counts.products} {t('cloudStore.stats.products')}</span>
+                                <span className="flex items-center gap-1"><ShoppingCart className="w-3 h-3" />{counts.storeTransactions} {t('cloudStore.stats.transactions')}</span>
+                                <span className="flex items-center gap-1"><HardDrive className="w-3 h-3" />{counts.backups} {t('cloudStore.stats.backups')}</span>
                               </div>
                             )}
                             <p className="text-[10px] text-muted-foreground">
-                              Dibuat {format(new Date(store.createdAt), 'dd MMM yyyy')}
+                              {t('cloudStore.created', { date: format(new Date(store.createdAt), 'dd MMM yyyy', { locale: dateLocale }) })}
                             </p>
                           </>
                         )}
@@ -352,12 +364,12 @@ export default function CloudStoreSettings() {
               {showCreate && !atLimit && (
                 <div className="rounded-xl border border-dashed p-3 space-y-2">
                   <p className="text-xs font-medium">
-                    {stores.length === 0 ? 'Buat toko pertamamu' : 'Tambah toko baru'}
+                    {stores.length === 0 ? t('cloudStore.createFirst') : t('cloudStore.addNew')}
                   </p>
                   <div className="flex gap-2">
                     <Input
                       className="h-9 text-sm"
-                      placeholder="Nama toko, misal: Toko Cabang Jakarta"
+                      placeholder={t('cloudStore.storeNamePlaceholder')}
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
@@ -369,12 +381,12 @@ export default function CloudStoreSettings() {
                       disabled={!newName.trim() || busy === 'create'}
                       onClick={handleCreate}
                     >
-                      {busy === 'create' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Buat'}
+                      {busy === 'create' ? <Loader2 className="w-4 h-4 animate-spin" /> : t('cloudStore.create')}
                     </Button>
                   </div>
                   {stores.length > 0 && (
                     <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowCreate(false)}>
-                      Batal
+                      {t('cloudStore.cancel')}
                     </Button>
                   )}
                 </div>

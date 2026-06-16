@@ -11,16 +11,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
+import { id, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
+import { useTranslation } from 'react-i18next';
+
+const LOCALES: Record<string, Locale> = { id, en: enUS, ms };
+const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'RM' };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 export default function CustomersPage() {
   const { can } = useAuth();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation('settings');
+  const dateLocale = LOCALES[i18n.language] ?? id;
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
+  const currencySymbol = CURRENCY_SYMBOL[i18n.language] ?? 'Rp';
 
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -51,7 +61,7 @@ export default function CustomersPage() {
   );
 
   if (!can('manage_customers')) {
-    return <LockedPage title="Pelanggan" permissionLabel="Kelola Pelanggan" />;
+    return <LockedPage title={t('customers.locked.title')} permissionLabel={t('customers.locked.permissionLabel')} />;
   }
 
   const filtered = customers?.filter(c =>
@@ -83,11 +93,11 @@ export default function CustomersPage() {
     };
     if (editCustomer?.id) {
       await db.customers.update(editCustomer.id, data);
-      toast.success('Pelanggan diperbarui');
+      toast.success(t('customers.toast.updated'));
     } else {
       await db.customers.add({ ...data, createdAt: new Date(), isDeleted: 0, deletedAt: null });
       trackEvent('create_customer');
-      toast.success('Pelanggan ditambahkan');
+      toast.success(t('customers.toast.added'));
     }
     setDialogOpen(false);
   };
@@ -96,7 +106,7 @@ export default function CustomersPage() {
     if (deleteId) {
       await db.customers.update(deleteId, { isDeleted: 1, deletedAt: new Date() });
       setDeleteId(null);
-      toast.success('Pelanggan dihapus');
+      toast.success(t('customers.toast.deleted'));
     }
   };
 
@@ -105,26 +115,26 @@ export default function CustomersPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <UsersIcon className="w-5 h-5 text-primary" />
-          Pelanggan
+          {t('customers.title')}
         </h1>
         <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
-          <Plus className="w-4 h-4" /> Tambah
+          <Plus className="w-4 h-4" /> {t('customers.add')}
         </Button>
       </div>
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input placeholder="Cari pelanggan..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
+        <Input placeholder={t('customers.searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
       </div>
 
-      <p className="text-xs text-muted-foreground">{filtered.length} pelanggan</p>
+      <p className="text-xs text-muted-foreground">{t('customers.count', { count: filtered.length })}</p>
 
       {filtered.length === 0 ? (
         <div className="text-center py-12">
           <UsersIcon className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-sm text-muted-foreground">Belum ada pelanggan</p>
+          <p className="text-sm text-muted-foreground">{t('customers.empty.title')}</p>
           <Button variant="outline" size="sm" className="mt-3" onClick={openAdd}>
-            <Plus className="w-4 h-4 mr-1" /> Tambah Pelanggan
+            <Plus className="w-4 h-4 mr-1" /> {t('customers.empty.add')}
           </Button>
         </div>
       ) : (
@@ -166,14 +176,14 @@ export default function CustomersPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl">
-          <DialogHeader><DialogTitle>{editCustomer ? 'Edit' : 'Tambah'} Pelanggan</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editCustomer ? t('customers.dialog.editTitle') : t('customers.dialog.addTitle')}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
-            <div className="space-y-1.5"><Label>Nama Pelanggan *</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: Budi Santoso" className="h-11" /></div>
-            <div className="space-y-1.5"><Label>Nomor HP</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="08123456789" className="h-11" type="tel" /></div>
-            <div className="space-y-1.5"><Label>Email</Label><Input value={email} onChange={e => setEmail(e.target.value)} placeholder="nama@email.com" className="h-11" type="email" /></div>
-            <div className="space-y-1.5"><Label>Alamat</Label><Input value={address} onChange={e => setAddress(e.target.value)} placeholder="Alamat pelanggan" className="h-11" /></div>
-            <div className="space-y-1.5"><Label>Catatan</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Catatan tambahan" rows={2} /></div>
-            <Button className="w-full h-11" onClick={handleSave} disabled={!name.trim()}>Simpan</Button>
+            <div className="space-y-1.5"><Label>{t('customers.dialog.nameLabel')}</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder={t('customers.dialog.namePlaceholder')} className="h-11" /></div>
+            <div className="space-y-1.5"><Label>{t('customers.dialog.phoneLabel')}</Label><Input value={phone} onChange={e => setPhone(e.target.value)} placeholder={t('customers.dialog.phonePlaceholder')} className="h-11" type="tel" /></div>
+            <div className="space-y-1.5"><Label>{t('customers.dialog.emailLabel')}</Label><Input value={email} onChange={e => setEmail(e.target.value)} placeholder={t('customers.dialog.emailPlaceholder')} className="h-11" type="email" /></div>
+            <div className="space-y-1.5"><Label>{t('customers.dialog.addressLabel')}</Label><Input value={address} onChange={e => setAddress(e.target.value)} placeholder={t('customers.dialog.addressPlaceholder')} className="h-11" /></div>
+            <div className="space-y-1.5"><Label>{t('customers.dialog.notesLabel')}</Label><Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('customers.dialog.notesPlaceholder')} rows={2} /></div>
+            <Button className="w-full h-11" onClick={handleSave} disabled={!name.trim()}>{t('customers.dialog.save')}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -181,12 +191,12 @@ export default function CustomersPage() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Pelanggan?</AlertDialogTitle>
-            <AlertDialogDescription>Data pelanggan yang dihapus tidak bisa dikembalikan. Transaksi lama tetap menyimpan nama pelanggan.</AlertDialogDescription>
+            <AlertDialogTitle>{t('customers.deleteDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('customers.deleteDialog.description')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Hapus</AlertDialogAction>
+            <AlertDialogCancel>{t('customers.deleteDialog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">{t('customers.deleteDialog.confirm')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -229,16 +239,16 @@ export default function CustomersPage() {
                 return (
                   <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-xl bg-muted/50 p-3">
-                      <p className="text-[10px] text-muted-foreground">Total Transaksi</p>
+                      <p className="text-[10px] text-muted-foreground">{t('customers.viewDialog.summary.totalTransactions')}</p>
                       <p className="text-lg font-bold">{completed.length}</p>
                     </div>
                     <div className="rounded-xl bg-primary/5 p-3">
-                      <p className="text-[10px] text-muted-foreground">Total Belanja</p>
-                      <p className="text-sm font-bold text-primary">Rp {totalSpent.toLocaleString('id-ID')}</p>
+                      <p className="text-[10px] text-muted-foreground">{t('customers.viewDialog.summary.totalSpent')}</p>
+                      <p className="text-sm font-bold text-primary">{currencySymbol} {totalSpent.toLocaleString(numberLocale)}</p>
                     </div>
                     <div className="rounded-xl bg-warning/10 p-3">
-                      <p className="text-[10px] text-muted-foreground">Sisa Hutang</p>
-                      <p className="text-sm font-bold text-warning">Rp {remainingDebt.toLocaleString('id-ID')}</p>
+                      <p className="text-[10px] text-muted-foreground">{t('customers.viewDialog.summary.remainingDebt')}</p>
+                      <p className="text-sm font-bold text-warning">{currencySymbol} {remainingDebt.toLocaleString(numberLocale)}</p>
                     </div>
                   </div>
                 );
@@ -247,7 +257,7 @@ export default function CustomersPage() {
               {(debts?.some((debt) => debt.customerId === viewCustomer.id) ?? false) && (
                 <Button variant="outline" className="w-full" onClick={() => navigate('/debts')}>
                   <HandCoins className="w-4 h-4 mr-2" />
-                  Buka Daftar Hutang
+                  {t('customers.viewDialog.openDebts')}
                 </Button>
               )}
 
@@ -255,15 +265,15 @@ export default function CustomersPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
                   <ReceiptIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                  <p className="text-sm font-semibold">Riwayat Transaksi</p>
+                  <p className="text-sm font-semibold">{t('customers.viewDialog.historyTitle')}</p>
                 </div>
 
                 {customerTx === undefined ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">Memuat...</p>
+                  <p className="text-xs text-muted-foreground py-4 text-center">{t('customers.viewDialog.loading')}</p>
                 ) : customerTx.length === 0 ? (
                   <div className="text-center py-8">
                     <ShoppingBag className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-                    <p className="text-xs text-muted-foreground">Belum ada transaksi</p>
+                    <p className="text-xs text-muted-foreground">{t('customers.viewDialog.empty')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -278,16 +288,16 @@ export default function CustomersPage() {
                           <div className="flex items-center gap-2 min-w-0">
                             <Badge variant="secondary" className="text-[10px] shrink-0">{tx.receiptNumber}</Badge>
                             {tx.status === 'open' && (
-                              <Badge className="text-[9px] bg-warning/15 text-warning shrink-0">Open Bill</Badge>
+                              <Badge className="text-[9px] bg-warning/15 text-warning shrink-0">{t('transactionHistory.badges.open')}</Badge>
                             )}
                             {debts?.some((debt) => debt.transactionId === tx.id && debt.status !== 'paid') && (
-                              <Badge className="text-[9px] bg-warning/15 text-warning shrink-0">Hutang</Badge>
+                              <Badge className="text-[9px] bg-warning/15 text-warning shrink-0">{t('transactionHistory.badges.debt')}</Badge>
                             )}
                           </div>
-                          <span className="text-sm font-bold text-primary shrink-0">Rp {tx.total.toLocaleString('id-ID')}</span>
+                          <span className="text-sm font-bold text-primary shrink-0">{currencySymbol} {tx.total.toLocaleString(numberLocale)}</span>
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-1">
-                          {format(new Date(tx.date), 'dd MMM yyyy, HH:mm', { locale: localeId })}
+                          {format(new Date(tx.date), 'dd MMM yyyy, HH:mm', { locale: dateLocale })}
                         </p>
                       </button>
                     ))}

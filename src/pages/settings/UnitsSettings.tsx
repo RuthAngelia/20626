@@ -10,8 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function UnitsSettings() {
+  const { t } = useTranslation('settings');
   const units = useLiveQuery(() => db.units.where('isDeleted').equals(0).toArray());
 
   const [unitDialog, setUnitDialog] = useState(false);
@@ -42,9 +44,9 @@ export default function UnitsSettings() {
     const existing = await db.units.where('name').equals(name).first();
     if (existing && existing.id !== unitEditId) {
       if (existing.isDeleted === 1) {
-        toast.error(`Satuan "${name}" pernah dihapus. Pakai nama lain atau pulihkan via backup.`);
+        toast.error(t('units.toast.wasDeleted', { name }));
       } else {
-        toast.error(`Satuan "${name}" sudah ada`);
+        toast.error(t('units.toast.duplicate', { name }));
       }
       return;
     }
@@ -66,9 +68,9 @@ export default function UnitsSettings() {
         });
       }
       setUnitDialog(false);
-      toast.success('Satuan disimpan');
+      toast.success(t('units.toast.saved'));
     } catch {
-      toast.error('Gagal menyimpan satuan');
+      toast.error(t('units.toast.saveFailed'));
     }
   };
   const requestDeleteUnit = async (u: Unit) => {
@@ -80,8 +82,10 @@ export default function UnitsSettings() {
     if (!unitDeleteTarget?.id) return;
     await db.units.update(unitDeleteTarget.id, { isDeleted: 1, deletedAt: new Date() });
     setUnitDeleteTarget(null);
-    toast.success('Satuan dihapus');
+    toast.success(t('units.toast.deleted'));
   };
+
+  const trimmedUnitName = unitName.trim();
 
   return (
     <div className="px-4 pt-6 pb-4 space-y-4">
@@ -92,16 +96,16 @@ export default function UnitsSettings() {
           </Link>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Ruler className="w-5 h-5 text-primary" />
-            Satuan
+            {t('units.title')}
           </h1>
         </div>
-        <Button size="sm" onClick={openUnitAdd} className="h-9 gap-1.5"><Plus className="w-4 h-4" /> Tambah</Button>
+        <Button size="sm" onClick={openUnitAdd} className="h-9 gap-1.5"><Plus className="w-4 h-4" /> {t('units.addButton')}</Button>
       </div>
 
       <Card className="border-0 shadow-sm">
         <CardContent className="p-3 space-y-1">
           {units && units.length === 0 && (
-            <p className="text-xs text-muted-foreground py-1.5">Belum ada satuan</p>
+            <p className="text-xs text-muted-foreground py-1.5">{t('units.empty')}</p>
           )}
           {units?.map(u => (
             <div key={u.id} className="flex items-center justify-between py-1.5">
@@ -117,23 +121,23 @@ export default function UnitsSettings() {
 
       <Dialog open={unitDialog} onOpenChange={setUnitDialog}>
         <DialogContent className="max-w-[95vw] rounded-xl">
-          <DialogHeader><DialogTitle>{unitEditId ? 'Edit' : 'Tambah'} Satuan</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{unitEditId ? t('units.dialog.editTitle') : t('units.dialog.addTitle')}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label>Nama Satuan</Label>
+              <Label>{t('units.dialog.nameLabel')}</Label>
               <Input
                 value={unitName}
                 onChange={e => setUnitName(e.target.value)}
-                placeholder="Contoh: pak, lusin, mangkok"
+                placeholder={t('units.dialog.namePlaceholder')}
                 className="h-11"
               />
-              {unitEditId && unitOriginalName && unitName.trim() && unitName.trim() !== unitOriginalName && (
+              {unitEditId && unitOriginalName && trimmedUnitName && trimmedUnitName !== unitOriginalName && (
                 <p className="text-[11px] text-muted-foreground">
-                  Semua produk yang memakai "{unitOriginalName}" akan otomatis di-rename ke "{unitName.trim()}".
+                  {t('units.dialog.renameHint', { old: unitOriginalName, new: trimmedUnitName })}
                 </p>
               )}
             </div>
-            <Button className="w-full h-11" onClick={saveUnit} disabled={!unitName.trim()}>Simpan</Button>
+            <Button className="w-full h-11" onClick={saveUnit} disabled={!unitName.trim()}>{t('units.dialog.save')}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -141,16 +145,16 @@ export default function UnitsSettings() {
       <AlertDialog open={!!unitDeleteTarget} onOpenChange={(o) => { if (!o) setUnitDeleteTarget(null); }}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Satuan "{unitDeleteTarget?.name}"?</AlertDialogTitle>
+            <AlertDialogTitle>{t('units.deleteDialog.title', { name: unitDeleteTarget?.name ?? '' })}</AlertDialogTitle>
             <AlertDialogDescription>
               {unitDeleteUsage > 0
-                ? `Saat ini dipakai oleh ${unitDeleteUsage} produk. Produk yang sudah ada tetap menyimpan satuan "${unitDeleteTarget?.name}", tapi satuan ini tidak akan muncul lagi di pilihan saat tambah/edit produk baru.`
-                : 'Satuan ini tidak dipakai oleh produk manapun. Aman untuk dihapus.'}
+                ? t('units.deleteDialog.inUse', { count: unitDeleteUsage, name: unitDeleteTarget?.name ?? '' })
+                : t('units.deleteDialog.safe')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteUnit} className="bg-destructive text-destructive-foreground">Hapus</AlertDialogAction>
+            <AlertDialogCancel>{t('units.deleteDialog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUnit} className="bg-destructive text-destructive-foreground">{t('units.deleteDialog.confirm')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

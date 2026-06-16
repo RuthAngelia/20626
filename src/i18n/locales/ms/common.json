@@ -1,0 +1,100 @@
+{
+  "app": {
+    "name": "FreeKasir",
+    "tagline": "POS Percuma — Urus Jualan Dengan Mudah 🇮🇩"
+  },
+  "nav": {
+    "home": "Beranda",
+    "products": "Produk",
+    "cashier": "Kasir",
+    "reports": "Laporan",
+    "more": "Lain-lain"
+  },
+  "common": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Padam",
+    "edit": "Sunting",
+    "close": "Tutup",
+    "back": "Kembali",
+    "search": "Cari",
+    "filter": "Tapis",
+    "all": "Semua",
+    "add": "Tambah",
+    "yes": "Ya",
+    "no": "Tidak",
+    "active": "Aktif",
+    "inactive": "Tidak Aktif",
+    "required": "*",
+    "optional": "Pilihan",
+    "loading": "Memuat...",
+    "noData": "Tiada data",
+    "confirm": "Sahkan",
+    "success": "Berjaya",
+    "error": "Gagal",
+    "name": "Nama",
+    "address": "Alamat",
+    "phone": "Telefon",
+    "notes": "Nota",
+    "date": "Tarikh",
+    "total": "Jumlah",
+    "price": "Harga",
+    "quantity": "Kuantiti",
+    "unit": "Unit",
+    "customer": "Pelanggan",
+    "supplier": "Pembekal",
+    "product": "Produk",
+    "stock": "Stok",
+    "payment": "Bayaran",
+    "category": "Kategori",
+    "setting": "Tetapan",
+    "locked": {
+      "accessDenied": "Akses Ditolak",
+      "ownerMessage": "Akaun anda sepatutnya mempunyai akses penuh. Cuba refresh aplikasi atau semak tetapan akaun.",
+      "staffNoPermission": "Anda tidak mempunyai keizinan untuk membuka",
+      "contactOwner": "Hubungi pemilik kedai jika anda rasa ini tidak betul.",
+      "backToHome": "Kembali ke Beranda"
+    },
+    "notFound": "Tidak ditemui",
+    "selectPlaceholder": "Pilih...",
+    "searchPlaceholder": "Cari...",
+    "installApp": "Pasang sebagai Aplikasi",
+    "installHint": "Buka terus dari skrin utama, tanpa pelayar",
+    "howToInstall": "Cara Pasang",
+    "storageUsed": "Storan Diguna"
+  },
+  "whatsNew": {
+    "title": "Apa Yang Baru di FreeKasir",
+    "slide": "Slaid {{number}}",
+    "finish": "Selesai",
+    "skip": "Langkau"
+  },
+  "error": {
+    "title": "Ralat berlaku",
+    "description": "Aplikasi mengalami ralat tidak dijangka. Cuba muat semula halaman. Jika masih berlaku, salin butiran ralat di bawah dan laporkan kepada pembangun.",
+    "details": "Butiran ralat",
+    "reload": "Muat semula",
+    "goHome": "Ke beranda",
+    "copyDetails": "Salin butiran",
+    "copyPrompt": "Salin butiran ralat berikut:"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oops! Halaman tidak ditemui",
+    "returnHome": "Kembali ke Beranda"
+  },
+  "index": {
+    "title": "Welcome to Your Blank App",
+    "description": "Start building your amazing project here!"
+  },
+  "themeColors": {
+    "blue": "Biru",
+    "orange": "Oren",
+    "green": "Hijau",
+    "purple": "Ungu",
+    "red": "Merah",
+    "pink": "Pink",
+    "teal": "Teal",
+    "yellow": "Kuning"
+  }
+}

@@ -5,20 +5,32 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { id as idLocale, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 import { useCloudAuth } from '@/hooks/use-cloud-auth';
 import { fetchPaymentHistory, verifyPayment, type PaymentTransaction } from '@/lib/cloud-api';
+import { useTranslation } from 'react-i18next';
 
 const PAGE_SIZE = 10;
-const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
-
-const STATUS_LABEL: Record<string, string> = { COMPLETED: 'Berhasil', PENDING: 'Menunggu', FAILED: 'Gagal' };
-const STATUS_COLOR: Record<string, string> = { COMPLETED: 'text-success', PENDING: 'text-warning', FAILED: 'text-destructive' };
+const LOCALES: Record<string, Locale> = { id: idLocale, en: enUS, ms };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 export default function CloudHistorySettings() {
   const { can } = useAuth();
   const { isLoggedIn, refreshProfile } = useCloudAuth();
+  const { t, i18n } = useTranslation('settings');
+  const dateLocale = LOCALES[i18n.language] ?? idLocale;
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
+  const rp = (n: number) => `Rp ${n.toLocaleString(numberLocale)}`;
+
+  const STATUS_LABEL: Record<string, string> = {
+    COMPLETED: t('cloudHistory.status.completed'),
+    PENDING: t('cloudHistory.status.pending'),
+    FAILED: t('cloudHistory.status.failed'),
+  };
+  const STATUS_COLOR: Record<string, string> = { COMPLETED: 'text-success', PENDING: 'text-warning', FAILED: 'text-destructive' };
 
   const [history, setHistory] = useState<PaymentTransaction[]>([]);
   const [page, setPage] = useState(1);
@@ -45,7 +57,7 @@ export default function CloudHistorySettings() {
   }, [isLoggedIn, load]);
 
   if (!can('manage_backup')) {
-    return <LockedPage title="Riwayat Transaksi" permissionLabel="Kelola Backup" />;
+    return <LockedPage title={t('cloudHistory.locked.title')} permissionLabel={t('cloudHistory.locked.permissionLabel')} />;
   }
 
   const handleCheckPayment = async (txId: string) => {
@@ -55,12 +67,12 @@ export default function CloudHistorySettings() {
       await load(1, false);
       if (result.transaction.status === 'COMPLETED') {
         await refreshProfile();
-        toast.success('Pembayaran berhasil! Langganan aktif. 🎉');
+        toast.success(t('cloudHistory.toast.paymentSuccess'));
       } else {
-        toast.info('Pembayaran belum terdeteksi. Coba lagi beberapa saat.');
+        toast.info(t('cloudHistory.toast.pending'));
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Gagal cek pembayaran');
+      toast.error(err instanceof Error ? err.message : t('cloudHistory.toast.verifyFailed'));
     } finally {
       setBusy(null);
     }
@@ -74,13 +86,13 @@ export default function CloudHistorySettings() {
         </Link>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <History className="w-5 h-5 text-primary" />
-          Riwayat Transaksi
+          {t('cloudHistory.title')}
         </h1>
       </div>
 
       {!isLoggedIn ? (
         <Card className="border-0 shadow-sm">
-          <CardContent className="p-4 text-center text-sm text-muted-foreground">Login dulu untuk melihat riwayat transaksi.</CardContent>
+          <CardContent className="p-4 text-center text-sm text-muted-foreground">{t('cloudHistory.loginPrompt')}</CardContent>
         </Card>
       ) : (
         <Card className="border-0 shadow-sm">
@@ -88,14 +100,14 @@ export default function CloudHistorySettings() {
             {loading && history.length === 0 ? (
               <div className="flex items-center justify-center py-4 text-muted-foreground"><Loader2 className="w-5 h-5 animate-spin" /></div>
             ) : history.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-3">Belum ada transaksi</p>
+              <p className="text-xs text-muted-foreground text-center py-3">{t('cloudHistory.noTransactions')}</p>
             ) : (
               <>
                 {history.map((tx) => (
                   <div key={tx.id} className="flex items-center justify-between gap-2 rounded-lg border p-2.5">
                     <div className="min-w-0">
                       <p className="text-xs font-medium truncate">{tx.plan?.name ?? tx.planId}</p>
-                      <p className="text-[10px] text-muted-foreground">{format(new Date(tx.createdAt), 'dd MMM yyyy HH:mm')}</p>
+                      <p className="text-[10px] text-muted-foreground">{format(new Date(tx.createdAt), 'dd MMM yyyy HH:mm', { locale: dateLocale })}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="text-right">
@@ -107,7 +119,7 @@ export default function CloudHistorySettings() {
                       {tx.status === 'PENDING' && (
                         <Button variant="outline" size="sm" className="h-8 gap-1 text-xs" disabled={busy === `verify:${tx.id}`} onClick={() => handleCheckPayment(tx.id)}>
                           {busy === `verify:${tx.id}` ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5" />}
-                          Cek
+                          {t('cloudHistory.checkButton')}
                         </Button>
                       )}
                     </div>
@@ -115,7 +127,7 @@ export default function CloudHistorySettings() {
                 ))}
                 {hasMore && (
                   <Button variant="ghost" size="sm" className="w-full h-8 text-xs" disabled={loading} onClick={() => load(page + 1, true)}>
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Muat lebih banyak'}
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : t('cloudHistory.loadMore')}
                   </Button>
                 )}
               </>

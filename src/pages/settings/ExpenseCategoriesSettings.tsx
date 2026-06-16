@@ -11,10 +11,12 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
+import { useTranslation } from 'react-i18next';
 
 const expenseEmojiOptions = ['💡', '🏠', '👤', '🚚', '🧰', '📦', '💧', '📞', '🌐', '☕', '🧾', '💼'];
 
 export default function ExpenseCategoriesSettings() {
+  const { t } = useTranslation('settings');
   const { can } = useAuth();
   const expenseCategories = useLiveQuery(() =>
     db.expenseCategories.where('isDeleted').equals(0).toArray(),
@@ -27,7 +29,12 @@ export default function ExpenseCategoriesSettings() {
   const [expCatEditId, setExpCatEditId] = useState<number | null>(null);
 
   if (!can('manage_categories_payments')) {
-    return <LockedPage title="Kategori Pengeluaran" permissionLabel="Kelola Kategori & Pembayaran" />;
+    return (
+      <LockedPage
+        title={t('expenseCategory.locked.title')}
+        permissionLabel={t('expenseCategory.locked.permissionLabel')}
+      />
+    );
   }
 
   const openExpCatAdd = () => { setExpCatEditId(null); setExpCatName(''); setExpCatIcon('📦'); setExpCatColor('#FBBF24'); setExpCatDialog(true); };
@@ -49,17 +56,17 @@ export default function ExpenseCategoriesSettings() {
       });
     }
     setExpCatDialog(false);
-    toast.success('Kategori pengeluaran disimpan');
+    toast.success(t('expenseCategory.toast.saved'));
   };
   const deleteExpCat = async (cat: ExpenseCategory) => {
     if (!cat.id) return;
     const usage = await db.expenses.where('categoryId').equals(cat.id).filter(e => e.isDeleted === 0).count();
     if (usage > 0) {
-      toast.error(`Tidak bisa dihapus: dipakai oleh ${usage} pengeluaran`);
+      toast.error(t('expenseCategory.toast.inUse', { count: usage }));
       return;
     }
     await db.expenseCategories.update(cat.id, { isDeleted: 1, deletedAt: new Date() });
-    toast.success('Kategori pengeluaran dihapus');
+    toast.success(t('expenseCategory.toast.deleted'));
   };
 
   return (
@@ -71,16 +78,16 @@ export default function ExpenseCategoriesSettings() {
           </Link>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <Wallet className="w-5 h-5 text-warning" />
-            Kategori Pengeluaran
+            {t('expenseCategory.title')}
           </h1>
         </div>
-        <Button size="sm" onClick={openExpCatAdd} className="h-9 gap-1.5"><Plus className="w-4 h-4" /> Tambah</Button>
+        <Button size="sm" onClick={openExpCatAdd} className="h-9 gap-1.5"><Plus className="w-4 h-4" /> {t('expenseCategory.addButton')}</Button>
       </div>
 
       <Card className="border-0 shadow-sm">
         <CardContent className="p-3 space-y-1">
           {expenseCategories && expenseCategories.length === 0 && (
-            <p className="text-xs text-muted-foreground py-1.5">Belum ada kategori pengeluaran</p>
+            <p className="text-xs text-muted-foreground py-1.5">{t('expenseCategory.empty')}</p>
           )}
           {expenseCategories?.map(c => (
             <div key={c.id} className="flex items-center justify-between py-1.5">
@@ -99,19 +106,19 @@ export default function ExpenseCategoriesSettings() {
 
       <Dialog open={expCatDialog} onOpenChange={setExpCatDialog}>
         <DialogContent className="max-w-[95vw] rounded-xl">
-          <DialogHeader><DialogTitle>{expCatEditId ? 'Edit' : 'Tambah'} Kategori Pengeluaran</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{expCatEditId ? t('expenseCategory.dialog.editTitle') : t('expenseCategory.dialog.addTitle')}</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label>Nama Kategori</Label>
+              <Label>{t('expenseCategory.dialog.nameLabel')}</Label>
               <Input
                 value={expCatName}
                 onChange={e => setExpCatName(e.target.value)}
-                placeholder="Contoh: Internet, Marketing"
+                placeholder={t('expenseCategory.dialog.namePlaceholder')}
                 className="h-11"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Ikon</Label>
+              <Label>{t('expenseCategory.dialog.iconLabel')}</Label>
               <div className="flex flex-wrap gap-2">
                 {expenseEmojiOptions.map(e => (
                   <button
@@ -125,10 +132,10 @@ export default function ExpenseCategoriesSettings() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Warna</Label>
+              <Label>{t('expenseCategory.dialog.colorLabel')}</Label>
               <Input type="color" value={expCatColor} onChange={e => setExpCatColor(e.target.value)} className="h-11 w-20" />
             </div>
-            <Button className="w-full h-11" onClick={saveExpCat} disabled={!expCatName.trim()}>Simpan</Button>
+            <Button className="w-full h-11" onClick={saveExpCat} disabled={!expCatName.trim()}>{t('expenseCategory.dialog.save')}</Button>
           </div>
         </DialogContent>
       </Dialog>

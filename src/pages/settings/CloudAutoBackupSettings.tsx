@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 import { useCloudAuth } from '@/hooks/use-cloud-auth';
+import { useTranslation } from 'react-i18next';
 
 type Interval = 'off' | 'hourly' | 'daily' | 'weekly';
 const DEFAULT_HOURS = 6;
@@ -17,10 +18,11 @@ const DEFAULT_HOURS = 6;
 export default function CloudAutoBackupSettings() {
   const { can } = useAuth();
   const { isLoggedIn, isSyncSubscribed } = useCloudAuth();
+  const { t } = useTranslation('settings');
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
 
   if (!can('manage_backup')) {
-    return <LockedPage title="Sinkronisasi Otomatis" permissionLabel="Kelola Backup" />;
+    return <LockedPage title={t('cloudAutoBackup.locked.title')} permissionLabel={t('cloudAutoBackup.locked.permissionLabel')} />;
   }
 
   const interval: Interval = (storeSettings?.cloudAutoBackupInterval as Interval) ?? 'off';
@@ -31,19 +33,23 @@ export default function CloudAutoBackupSettings() {
     const patch: { cloudAutoBackupInterval: Interval; cloudAutoBackupHours?: number } = { cloudAutoBackupInterval: value };
     if (value === 'hourly' && !storeSettings.cloudAutoBackupHours) patch.cloudAutoBackupHours = DEFAULT_HOURS;
     await db.storeSettings.update(storeSettings.id, patch);
-    const label =
-      value === 'off' ? 'dimatikan'
-      : value === 'hourly' ? `setiap ${patch.cloudAutoBackupHours ?? hours} jam`
-      : value === 'daily' ? 'harian'
-      : 'mingguan';
-    toast.success(`Sinkronisasi otomatis ${label}`);
+    const resolvedHours = patch.cloudAutoBackupHours ?? hours;
+    toast.success(
+      value === 'off'
+        ? t('cloudAutoBackup.toast.off')
+        : value === 'hourly'
+          ? t('cloudAutoBackup.toast.hourly', { hours: resolvedHours })
+          : value === 'daily'
+            ? t('cloudAutoBackup.toast.daily')
+            : t('cloudAutoBackup.toast.weekly')
+    );
   };
 
   const saveHours = async (raw: string) => {
     if (!storeSettings?.id) return;
     const parsed = Math.floor(Number(raw));
     if (!Number.isFinite(parsed) || parsed < 1) {
-      toast.error('Jam minimal 1');
+      toast.error(t('cloudAutoBackup.hourMinError'));
       return;
     }
     await db.storeSettings.update(storeSettings.id, { cloudAutoBackupHours: parsed });
@@ -57,33 +63,33 @@ export default function CloudAutoBackupSettings() {
         </Link>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Clock className="w-5 h-5 text-primary" />
-          Sinkronisasi Otomatis
+          {t('cloudAutoBackup.title')}
         </h1>
       </div>
 
       {!isLoggedIn || !isSyncSubscribed ? (
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 text-center text-sm text-muted-foreground">
-            Aktifkan langganan Cloud Sync dulu untuk mengatur sinkronisasi otomatis.
+            {t('cloudAutoBackup.requiresSubscription')}
           </CardContent>
         </Card>
       ) : (
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 space-y-3">
             <div className="space-y-1.5">
-              <p className="text-sm font-medium">Jadwal Sinkronisasi Otomatis</p>
+              <p className="text-sm font-medium">{t('cloudAutoBackup.scheduleLabel')}</p>
               <Select value={interval} onValueChange={(v) => setInterval(v as Interval)}>
                 <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="off">Nonaktif</SelectItem>
-                  <SelectItem value="hourly">Setiap beberapa jam</SelectItem>
-                  <SelectItem value="daily">Harian</SelectItem>
-                  <SelectItem value="weekly">Mingguan</SelectItem>
+                  <SelectItem value="off">{t('cloudAutoBackup.interval.off')}</SelectItem>
+                  <SelectItem value="hourly">{t('cloudAutoBackup.interval.hourly')}</SelectItem>
+                  <SelectItem value="daily">{t('cloudAutoBackup.interval.daily')}</SelectItem>
+                  <SelectItem value="weekly">{t('cloudAutoBackup.interval.weekly')}</SelectItem>
                 </SelectContent>
               </Select>
               {interval === 'hourly' && (
                 <div className="flex items-center gap-2 pt-1">
-                  <span className="text-xs text-muted-foreground">Setiap</span>
+                  <span className="text-xs text-muted-foreground">{t('cloudAutoBackup.everyHours.prefix')}</span>
                   <Input
                     key={hours}
                     type="number"
@@ -93,12 +99,12 @@ export default function CloudAutoBackupSettings() {
                     onBlur={(e) => saveHours(e.target.value)}
                     className="h-9 w-20 text-center"
                   />
-                  <span className="text-xs text-muted-foreground">jam</span>
+                  <span className="text-xs text-muted-foreground">{t('cloudAutoBackup.everyHours.suffix')}</span>
                 </div>
               )}
             </div>
             <p className="text-[10px] text-muted-foreground">
-              Sinkronisasi berjalan otomatis saat aplikasi dibuka bila sudah lewat dari interval. (PWA tidak menjalankan sinkronisasi di latar belakang saat aplikasi tertutup.)
+              {t('cloudAutoBackup.scheduleNote')}
             </p>
           </CardContent>
         </Card>

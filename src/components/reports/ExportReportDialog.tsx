@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ export default function ExportReportDialog({
   defaultStartMs,
   defaultEndMs,
 }: ExportReportDialogProps) {
+  const { t } = useTranslation('reports');
   const [startDate, setStartDate] = useState(() => format(defaultStartMs, 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(() => format(defaultEndMs, 'yyyy-MM-dd'));
   const [exporting, setExporting] = useState(false);
@@ -48,7 +50,7 @@ export default function ExportReportDialog({
 
   const handleExport = async () => {
     if (invalidRange) {
-      toast.error('Rentang tanggal tidak valid');
+      toast.error(t('exportDialog.invalidRangeToast'));
       return;
     }
     setExporting(true);
@@ -58,16 +60,16 @@ export default function ExportReportDialog({
         new Date(`${endDate}T00:00:00`),
       );
       if (result.txCount === 0 && result.expenseCount === 0) {
-        toast.info('Tidak ada data pada rentang ini — file tetap dibuat (kosong)');
+        toast.info(t('exportDialog.noDataToast'));
       } else {
         toast.success(
-          `Berhasil export: ${result.txCount} transaksi, ${result.expenseCount} pengeluaran`,
+          t('exportDialog.successToast', { txCount: result.txCount, expenseCount: result.expenseCount }),
         );
       }
       onOpenChange(false);
     } catch (err) {
       console.error('Export laporan gagal:', err);
-      toast.error('Gagal membuat file Excel');
+      toast.error(t('exportDialog.errorToast'));
     } finally {
       setExporting(false);
     }
@@ -79,19 +81,16 @@ export default function ExportReportDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="w-5 h-5 text-primary" />
-            Export Laporan ke Excel
+            {t('exportDialog.title')}
           </DialogTitle>
-          <DialogDescription>
-            Pilih rentang tanggal. File berisi sheet Ringkasan, Transaksi, Detail Item, dan
-            Pengeluaran. Hanya transaksi lunas yang dihitung.
-          </DialogDescription>
+          <DialogDescription>{t('exportDialog.description')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="export-start" className="text-xs">
-                Dari Tanggal
+                {t('exportDialog.fromDate')}
               </Label>
               <Input
                 id="export-start"
@@ -104,7 +103,7 @@ export default function ExportReportDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="export-end" className="text-xs">
-                Sampai Tanggal
+                {t('exportDialog.toDate')}
               </Label>
               <Input
                 id="export-end"
@@ -119,7 +118,7 @@ export default function ExportReportDialog({
 
           {invalidRange && startDate && endDate && (
             <p className="text-xs text-destructive">
-              Tanggal akhir harus sama atau setelah tanggal mulai.
+              {t('exportDialog.invalidRange')}
             </p>
           )}
 
@@ -130,11 +129,11 @@ export default function ExportReportDialog({
           >
             {exporting ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Membuat file…
+                <Loader2 className="w-4 h-4 animate-spin" /> {t('exportDialog.creating')}
               </>
             ) : (
               <>
-                <Download className="w-4 h-4" /> Export Excel
+                <Download className="w-4 h-4" /> {t('exportDialog.exportButton')}
               </>
             )}
           </Button>

@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface LockedPageProps {
   /**
@@ -28,6 +29,7 @@ interface LockedPageProps {
 export default function LockedPage({ title, permissionLabel }: LockedPageProps) {
   const { isOwner } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
 
   return (
     <div className="px-4 pt-6 pb-4 space-y-4">
@@ -42,27 +44,25 @@ export default function LockedPage({ title, permissionLabel }: LockedPageProps) 
             <ShieldAlert className="w-8 h-8" />
           </div>
           <div className="space-y-1.5">
-            <p className="text-base font-semibold">Akses dikunci</p>
+            <p className="text-base font-semibold">{t('locked.accessDenied')}</p>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               {isOwner ? (
-                <>
-                  Akun Anda seharusnya memiliki akses penuh. Coba refresh aplikasi atau periksa pengaturan akun.
-                </>
+                t('locked.ownerMessage')
               ) : (
                 <>
-                  Anda tidak punya izin untuk membuka halaman <span className="font-medium">{title}</span>
+                  {t('locked.staffNoPermission')} <span className="font-medium">{title}</span>
                   {permissionLabel && (
                     <>
                       {' '}(<span className="italic">{permissionLabel}</span>)
                     </>
                   )}
-                  . Hubungi pemilik toko jika menurut Anda ini tidak benar.
+                  . {t('locked.contactOwner')}
                 </>
               )}
             </p>
           </div>
           <Button variant="outline" size="sm" className="mt-1" onClick={() => navigate('/')}>
-            Kembali ke Beranda
+            {t('locked.backToHome')}
           </Button>
         </CardContent>
       </Card>

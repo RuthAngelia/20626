@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "./i18n";
 
 // Global handlers for errors that React's ErrorBoundary cannot catch:
 //  - unhandled promise rejections (async code)

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { Palette, ChevronLeft } from 'lucide-react';
@@ -10,11 +11,12 @@ import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 
 export default function ThemeSettings() {
+  const { t } = useTranslation('settings');
   const { can } = useAuth();
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
 
   if (!can('manage_store_settings')) {
-    return <LockedPage title="Warna Tema" permissionLabel="Kelola Pengaturan Toko" />;
+    return <LockedPage title={t('masterData.theme.title')} permissionLabel={t('masterData.theme.permissionLabel')} />;
   }
 
   return (
@@ -25,7 +27,7 @@ export default function ThemeSettings() {
         </Link>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <Palette className="w-5 h-5 text-primary" />
-          Warna Tema
+          {t('masterData.theme.title')}
         </h1>
       </div>
 

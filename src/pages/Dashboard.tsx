@@ -5,18 +5,26 @@ import { ShoppingCart, Package, BarChart3, TrendingUp, AlertTriangle, Receipt, C
 import { Card, CardContent } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { id, enUS, ms } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import BackupReminder, { shouldShowBackupReminder, exportBackupData } from '@/components/BackupReminder';
 import WhatsNewModal from '@/components/WhatsNewModal';
 import { getUnseenFeatures } from '@/lib/whats-new';
 import { useAuth } from '@/hooks/use-auth';
 import type { PermissionKey } from '@/lib/db';
+import { useTranslation } from 'react-i18next';
+
+const LOCALES: Record<string, Locale> = { id, en: enUS, ms };
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 export default function Dashboard() {
   const { can } = useAuth();
+  const { t, i18n } = useTranslation('dashboard');
   const [backupDismissed, setBackupDismissed] = useState(false);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+
+  const dateLocale = LOCALES[i18n.language] ?? id;
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
 
   const storeSettings = useLiveQuery(() => db.storeSettings.toCollection().first());
 
@@ -91,9 +99,9 @@ export default function Dashboard() {
   const showBackup = !backupDismissed && storeSettings && shouldShowBackupReminder(storeSettings.lastBackupAt) && can('manage_backup');
 
   const quickActions: { to: string; icon: typeof ShoppingCart; label: string; color: string; perm?: PermissionKey }[] = [
-    { to: '/cashier', icon: ShoppingCart, label: 'Kasir', color: 'bg-primary/10 text-primary', perm: 'create_transaction' },
-    { to: '/products', icon: Package, label: 'Produk', color: 'bg-accent/10 text-accent' },
-    { to: '/reports', icon: BarChart3, label: 'Laporan', color: 'bg-success/10 text-success', perm: 'view_reports' },
+    { to: '/cashier', icon: ShoppingCart, label: t('quickActions.cashier'), color: 'bg-primary/10 text-primary', perm: 'create_transaction' },
+    { to: '/products', icon: Package, label: t('quickActions.products'), color: 'bg-accent/10 text-accent' },
+    { to: '/reports', icon: BarChart3, label: t('quickActions.reports'), color: 'bg-success/10 text-success', perm: 'view_reports' },
   ];
   const visibleActions = quickActions.filter((a) => !a.perm || can(a.perm));
 
@@ -101,8 +109,8 @@ export default function Dashboard() {
     <div className="px-4 pt-6 space-y-5">
       {/* Header */}
       <div>
-        <p className="text-sm text-muted-foreground">{format(new Date(), 'EEEE, d MMMM yyyy', { locale: id })}</p>
-        <h1 className="text-2xl font-bold tracking-tight">{storeSettings?.storeName || 'FreeKasir'}</h1>
+        <p className="text-sm text-muted-foreground">{format(new Date(), 'EEEE, d MMMM yyyy', { locale: dateLocale })}</p>
+        <h1 className="text-2xl font-bold tracking-tight">{storeSettings?.storeName || t('title.storeNameFallback')}</h1>
       </div>
 
       {/* Backup Reminder */}
@@ -118,9 +126,9 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-0 shadow-sm bg-primary text-primary-foreground">
           <CardContent className="p-4">
-            <p className="text-xs opacity-80">Penjualan Hari Ini</p>
-            <p className="text-xl font-bold mt-1">Rp {totalSales.toLocaleString('id-ID')}</p>
-            <p className="text-xs opacity-70 mt-1">{txCount} transaksi</p>
+            <p className="text-xs opacity-80">{t('stats.salesToday')}</p>
+            <p className="text-xl font-bold mt-1">Rp {totalSales.toLocaleString(numberLocale)}</p>
+            <p className="text-xs opacity-70 mt-1">{t('stats.transactions', { count: txCount })}</p>
           </CardContent>
         </Card>
         {can('view_reports') && (
@@ -128,9 +136,9 @@ export default function Dashboard() {
             <CardContent className="p-4">
               <div className="flex items-center gap-1.5 text-success">
                 <TrendingUp className="w-4 h-4" />
-                <p className="text-xs font-medium">Profit Hari Ini</p>
+                <p className="text-xs font-medium">{t('stats.profitToday')}</p>
               </div>
-              <p className="text-xl font-bold mt-1">Rp {totalProfit.toLocaleString('id-ID')}</p>
+              <p className="text-xl font-bold mt-1">Rp {totalProfit.toLocaleString(numberLocale)}</p>
             </CardContent>
           </Card>
         )}
@@ -140,10 +148,10 @@ export default function Dashboard() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-1.5 text-warning">
                   <Wallet className="w-4 h-4" />
-                  <p className="text-xs font-medium">Pengeluaran Hari Ini</p>
+                  <p className="text-xs font-medium">{t('stats.expensesToday')}</p>
                 </div>
-                <p className="text-xl font-bold mt-1">Rp {totalExpensesToday.toLocaleString('id-ID')}</p>
-                <p className="text-xs text-muted-foreground mt-1">{expenseCount} catatan</p>
+                <p className="text-xl font-bold mt-1">Rp {totalExpensesToday.toLocaleString(numberLocale)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('stats.expenseNotes', { count: expenseCount })}</p>
               </CardContent>
             </Card>
           </Link>
@@ -159,8 +167,8 @@ export default function Dashboard() {
                 <ClipboardList className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold">Open Bills</p>
-                <p className="text-xs text-muted-foreground">{openBillsCount} bill menunggu pembayaran</p>
+                <p className="text-sm font-semibold">{t('openBills.title')}</p>
+                <p className="text-xs text-muted-foreground">{t('openBills.description', { count: openBillsCount })}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </CardContent>
@@ -171,7 +179,7 @@ export default function Dashboard() {
       {/* Quick Actions */}
       {visibleActions.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3">Akses Cepat</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3">{t('quickActions.title')}</h2>
           <div className={`grid gap-3 ${visibleActions.length === 1 ? 'grid-cols-1' : visibleActions.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
             {visibleActions.map(({ to, icon: Icon, label, color }) => (
               <Link key={to} to={to}>
@@ -195,11 +203,11 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-muted-foreground flex items-center gap-1.5">
               <Receipt className="w-4 h-4 text-primary" />
-              Transaksi Terakhir
+              {t('recentTransactions.title')}
             </h2>
             <Link to="/history">
               <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-primary">
-                Lihat Semua <ChevronRight className="w-3 h-3" />
+                {t('recentTransactions.viewAll')} <ChevronRight className="w-3 h-3" />
               </Button>
             </Link>
           </div>
@@ -217,8 +225,8 @@ export default function Dashboard() {
                         <p className="text-[10px] text-muted-foreground shrink-0 ml-2">{format(new Date(tx.date), 'HH:mm')}</p>
                       </div>
                       <div className="flex items-center justify-between mt-0.5">
-                        <p className="text-sm font-bold text-primary">Rp {tx.total.toLocaleString('id-ID')}</p>
-                        <p className="text-[10px] text-muted-foreground">{paymentMethods?.find(pm => pm.id === tx.paymentMethodId)?.name || 'Tunai'}</p>
+                        <p className="text-sm font-bold text-primary">Rp {tx.total.toLocaleString(numberLocale)}</p>
+                        <p className="text-[10px] text-muted-foreground">{paymentMethods?.find(pm => pm.id === tx.paymentMethodId)?.name || t('recentTransactions.cashFallback')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -234,7 +242,7 @@ export default function Dashboard() {
         <div>
           <h2 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-1.5">
             <AlertTriangle className="w-4 h-4 text-warning" />
-            Stok Menipis
+            {t('lowStock.title')}
           </h2>
           <div className="space-y-2">
             {lowStockProducts.slice(0, 5).map(product => (
@@ -242,7 +250,7 @@ export default function Dashboard() {
                 <CardContent className="p-3 flex items-center justify-between">
                   <span className="text-sm font-medium">{product.name}</span>
                   <span className="text-xs font-bold text-destructive bg-destructive/10 px-2 py-1 rounded-full">
-                    Sisa {product.stock} {product.unit}
+                    {t('lowStock.remaining', { stock: product.stock, unit: product.unit })}
                   </span>
                 </CardContent>
               </Card>

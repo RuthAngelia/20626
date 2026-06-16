@@ -1,6 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type User, ALL_PERMISSIONS } from '@/lib/db';
 import { useState } from 'react';
+import { format } from 'date-fns';
+import { id as idLocale, enUS, ms } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Plus, Edit2, Trash2, KeyRound, UserCircle2, ShieldCheck, UserCheck, UserX, Users as UsersIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,12 +27,14 @@ import {
   type PermissionKey,
 } from '@/lib/auth';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
+
+const LOCALES: Record<string, Locale> = { id: idLocale, en: enUS, ms };
 
 export default function UsersPage() {
   const navigate = useNavigate();
   const { currentUser, isOwner, multiUserEnabled, refresh } = useAuth();
+  const { t, i18n } = useTranslation('settings');
+  const dateLocale = LOCALES[i18n.language] ?? idLocale;
   const users = useLiveQuery(() => db.users.toArray());
 
   // Add/edit dialog
@@ -57,17 +63,15 @@ export default function UsersPage() {
           </Button>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <UsersIcon className="w-5 h-5 text-primary" />
-            Karyawan & Akses
+            {t('users.title')}
           </h1>
         </div>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6 text-center space-y-2">
-            <p className="text-sm font-semibold">Multi-user belum aktif</p>
-            <p className="text-xs text-muted-foreground">
-              Aktifkan dulu di halaman Pengaturan untuk mengelola karyawan dan akses.
-            </p>
+            <p className="text-sm font-semibold">{t('users.notEnabled.title')}</p>
+            <p className="text-xs text-muted-foreground">{t('users.notEnabled.description')}</p>
             <Button size="sm" className="mt-2" onClick={() => navigate('/settings')}>
-              Buka Pengaturan
+              {t('users.notEnabled.button')}
             </Button>
           </CardContent>
         </Card>
@@ -84,12 +88,12 @@ export default function UsersPage() {
           </Button>
           <h1 className="text-xl font-bold flex items-center gap-2">
             <UsersIcon className="w-5 h-5 text-primary" />
-            Karyawan & Akses
+            {t('users.title')}
           </h1>
         </div>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-6 text-center text-sm text-muted-foreground">
-            Hanya pemilik toko yang dapat mengelola karyawan.
+            {t('users.notOwner')}
           </CardContent>
         </Card>
       </div>
@@ -124,27 +128,27 @@ export default function UsersPage() {
       if (editing) {
         // Edit existing user (name + permissions only — username & PIN have separate flows)
         if (!name.trim()) {
-          toast.error('Nama tidak boleh kosong');
+          toast.error(t('users.toast.nameRequired'));
           return;
         }
         await db.users.update(editing.id!, {
           name: name.trim(),
           permissions: editing.role === 'owner' ? [] : permissions,
         });
-        toast.success('Data karyawan diperbarui');
+        toast.success(t('users.toast.staffUpdated'));
         if (currentUser?.id === editing.id) await refresh();
       } else {
         // Create new staff
         if (!isValidUsername(username)) {
-          toast.error('Username 3-20 karakter, hanya huruf/angka/underscore');
+          toast.error(t('users.toast.usernameInvalid'));
           return;
         }
         if (!isValidPin(pin)) {
-          toast.error('PIN harus 4-6 digit angka');
+          toast.error(t('users.toast.pinInvalid'));
           return;
         }
         if (!name.trim()) {
-          toast.error('Nama tidak boleh kosong');
+          toast.error(t('users.toast.nameRequired'));
           return;
         }
         const result = await createUser({
@@ -155,10 +159,10 @@ export default function UsersPage() {
           permissions,
         });
         if (!result.ok) {
-          toast.error(result.error || 'Gagal menambah karyawan');
+          toast.error(result.error || t('users.toast.createFailed'));
           return;
         }
-        toast.success(`Karyawan "${name.trim()}" ditambahkan`);
+        toast.success(t('users.toast.staffCreated', { name: name.trim() }));
       }
       setDialogOpen(false);
     } finally {
@@ -175,51 +179,51 @@ export default function UsersPage() {
   const handlePinReset = async () => {
     if (!pinTarget?.id) return;
     if (!isValidPin(newPin)) {
-      toast.error('PIN harus 4-6 digit angka');
+      toast.error(t('users.toast.pinInvalid'));
       return;
     }
     const result = await updateUserPin(pinTarget.id, newPin);
     if (!result.ok) {
-      toast.error(result.error || 'Gagal reset PIN');
+      toast.error(result.error || t('users.toast.pinResetFailed'));
       return;
     }
-    toast.success(`PIN ${pinTarget.name} berhasil direset`);
+    toast.success(t('users.toast.pinReset', { name: pinTarget.name }));
     setPinDialogOpen(false);
   };
 
   const toggleActive = async (user: User) => {
     if (user.id === currentUser?.id) {
-      toast.error('Tidak bisa menonaktifkan akun yang sedang login');
+      toast.error(t('users.toast.cannotSelfDisable'));
       return;
     }
     if (user.role === 'owner') {
       const otherOwners = (users ?? []).filter((u) => u.role === 'owner' && u.id !== user.id && u.isActive === 1);
       if (user.isActive === 1 && otherOwners.length === 0) {
-        toast.error('Harus ada minimal 1 pemilik aktif');
+        toast.error(t('users.toast.ownerMinRequired'));
         return;
       }
     }
     await db.users.update(user.id!, { isActive: user.isActive === 1 ? 0 : 1 });
-    toast.success(user.isActive === 1 ? 'Akun dinonaktifkan' : 'Akun diaktifkan');
+    toast.success(user.isActive === 1 ? t('users.toast.accountDisabled') : t('users.toast.accountEnabled'));
   };
 
   const handleDelete = async () => {
     if (!deleteTarget?.id) return;
     if (deleteTarget.id === currentUser?.id) {
-      toast.error('Tidak bisa menghapus akun sendiri');
+      toast.error(t('users.toast.cannotSelfDelete'));
       setDeleteTarget(null);
       return;
     }
     if (deleteTarget.role === 'owner') {
       const otherOwners = (users ?? []).filter((u) => u.role === 'owner' && u.id !== deleteTarget.id);
       if (otherOwners.length === 0) {
-        toast.error('Harus ada minimal 1 pemilik');
+        toast.error(t('users.toast.ownerMinRequired'));
         setDeleteTarget(null);
         return;
       }
     }
     await db.users.delete(deleteTarget.id);
-    toast.success(`Akun "${deleteTarget.name}" dihapus`);
+    toast.success(t('users.toast.accountDeleted', { name: deleteTarget.name }));
     setDeleteTarget(null);
   };
 
@@ -236,17 +240,15 @@ export default function UsersPage() {
         </Button>
         <h1 className="text-xl font-bold flex items-center gap-2">
           <UsersIcon className="w-5 h-5 text-primary" />
-          Karyawan & Akses
+          {t('users.title')}
         </h1>
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Atur siapa yang bisa mengakses apa di toko Anda. Pemilik selalu memiliki akses penuh.
-      </p>
+      <p className="text-xs text-muted-foreground">{t('users.desc')}</p>
 
       <Button size="sm" className="w-full h-10 gap-1.5" onClick={openAdd}>
         <Plus className="w-4 h-4" />
-        Tambah Karyawan
+        {t('users.addButton')}
       </Button>
 
       <div className="space-y-2">
@@ -266,17 +268,17 @@ export default function UsersPage() {
                     <p className="text-sm font-semibold">{user.name}</p>
                     {user.role === 'owner' && (
                       <Badge variant="secondary" className="text-[9px] h-4 bg-primary/10 text-primary border-primary/20">
-                        Pemilik
+                        {t('users.card.owner')}
                       </Badge>
                     )}
                     {user.id === currentUser?.id && (
                       <Badge variant="secondary" className="text-[9px] h-4">
-                        Anda
+                        {t('users.card.you')}
                       </Badge>
                     )}
                     {user.isActive === 0 && (
                       <Badge variant="secondary" className="text-[9px] h-4 bg-muted text-muted-foreground">
-                        Nonaktif
+                        {t('users.card.inactive')}
                       </Badge>
                     )}
                   </div>
@@ -284,18 +286,20 @@ export default function UsersPage() {
                   {user.role !== 'owner' && (
                     <p className="text-[10px] text-muted-foreground mt-0.5">
                       {user.permissions.length === 0
-                        ? 'Tidak ada akses'
-                        : `${user.permissions.length} akses diberikan`}
+                        ? t('users.card.noAccess')
+                        : t('users.card.accessCount', { count: user.permissions.length })}
                     </p>
                   )}
                   {user.lastLoginAt && (
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                      Login terakhir: {format(new Date(user.lastLoginAt), 'dd MMM yyyy HH:mm', { locale: localeId })}
+                      {t('users.card.lastLogin', {
+                        time: format(new Date(user.lastLoginAt), 'dd MMM yyyy HH:mm', { locale: dateLocale }),
+                      })}
                     </p>
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(user)} title="Edit">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(user)} title={t('users.card.edit')}>
                     <Edit2 className="w-3.5 h-3.5" />
                   </Button>
                   <Button
@@ -303,7 +307,7 @@ export default function UsersPage() {
                     size="icon"
                     className="h-7 w-7"
                     onClick={() => openPinReset(user)}
-                    title="Reset PIN"
+                    title={t('users.card.resetPin')}
                   >
                     <KeyRound className="w-3.5 h-3.5" />
                   </Button>
@@ -312,7 +316,7 @@ export default function UsersPage() {
                     size="icon"
                     className="h-7 w-7"
                     onClick={() => toggleActive(user)}
-                    title={user.isActive === 1 ? 'Nonaktifkan' : 'Aktifkan'}
+                    title={user.isActive === 1 ? t('users.card.deactivate') : t('users.card.activate')}
                   >
                     {user.isActive === 1 ? <UserCheck className="w-3.5 h-3.5" /> : <UserX className="w-3.5 h-3.5 text-muted-foreground" />}
                   </Button>
@@ -322,7 +326,7 @@ export default function UsersPage() {
                       size="icon"
                       className="h-7 w-7 text-destructive"
                       onClick={() => setDeleteTarget(user)}
-                      title="Hapus"
+                      title={t('users.card.delete')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -338,36 +342,34 @@ export default function UsersPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Edit Karyawan' : 'Tambah Karyawan'}</DialogTitle>
+            <DialogTitle>{editing ? t('users.dialog.editTitle') : t('users.dialog.addTitle')}</DialogTitle>
             <DialogDescription className="text-xs">
-              {editing
-                ? 'Ubah nama dan akses. Username tidak bisa diubah; gunakan tombol reset PIN untuk mengganti PIN.'
-                : 'Karyawan akan login dengan username dan PIN.'}
+              {editing ? t('users.dialog.descEdit') : t('users.dialog.descAdd')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label>Nama Lengkap *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Contoh: Budi Santoso" className="h-11" />
+              <Label>{t('users.dialog.nameLabel')}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('users.dialog.namePlaceholder')} className="h-11" />
             </div>
 
             {!editing && (
               <>
                 <div className="space-y-1.5">
-                  <Label>Username *</Label>
+                  <Label>{t('users.dialog.usernameLabel')}</Label>
                   <Input
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, ''))}
-                    placeholder="Contoh: budi"
+                    placeholder={t('users.dialog.usernamePlaceholder')}
                     className="h-11 font-mono"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
                   />
-                  <p className="text-[10px] text-muted-foreground">3-20 karakter, hanya huruf/angka/underscore</p>
+                  <p className="text-[10px] text-muted-foreground">{t('users.dialog.usernameHint')}</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>PIN *</Label>
+                  <Label>{t('users.dialog.pinLabel')}</Label>
                   <Input
                     type="text"
                     inputMode="numeric"
@@ -375,7 +377,7 @@ export default function UsersPage() {
                     maxLength={6}
                     value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                    placeholder="4-6 digit"
+                    placeholder={t('users.dialog.pinPlaceholder')}
                     className="h-11 font-mono text-center tracking-widest"
                   />
                 </div>
@@ -384,11 +386,11 @@ export default function UsersPage() {
 
             {editing?.role === 'owner' ? (
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 text-xs text-muted-foreground">
-                Pemilik selalu memiliki akses penuh ke semua fitur.
+                {t('users.dialog.ownerNotice')}
               </div>
             ) : (
               <div className="space-y-2">
-                <Label className="text-sm">Hak Akses</Label>
+                <Label className="text-sm">{t('users.dialog.accessLabel')}</Label>
                 <div className="space-y-1.5">
                   {ALL_PERMISSIONS.map((key) => {
                     const meta = PERMISSION_LABELS[key];
@@ -417,7 +419,7 @@ export default function UsersPage() {
             )}
 
             <Button className="w-full h-11" onClick={handleSave} disabled={saving}>
-              {saving ? 'Menyimpan…' : editing ? 'Simpan Perubahan' : 'Tambah Karyawan'}
+              {saving ? t('users.dialog.saving') : editing ? t('users.dialog.saveEdit') : t('users.dialog.saveAdd')}
             </Button>
           </div>
         </DialogContent>
@@ -427,9 +429,9 @@ export default function UsersPage() {
       <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
         <DialogContent className="max-w-[90vw] rounded-xl">
           <DialogHeader>
-            <DialogTitle>Reset PIN {pinTarget?.name}</DialogTitle>
+            <DialogTitle>{t('users.pinReset.title', { name: pinTarget?.name ?? '' })}</DialogTitle>
             <DialogDescription className="text-xs">
-              Masukkan PIN baru. PIN lama akan langsung diganti dan {pinTarget?.name} harus login ulang dengan PIN baru.
+              {t('users.pinReset.desc', { name: pinTarget?.name ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 mt-2">
@@ -440,12 +442,12 @@ export default function UsersPage() {
               maxLength={6}
               value={newPin}
               onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-              placeholder="4-6 digit"
+              placeholder={t('users.pinReset.placeholder')}
               className="h-12 font-mono text-center tracking-widest text-lg"
               autoFocus
             />
             <Button className="w-full h-11" onClick={handlePinReset} disabled={!isValidPin(newPin)}>
-              Simpan PIN Baru
+              {t('users.pinReset.button')}
             </Button>
           </div>
         </DialogContent>
@@ -455,16 +457,13 @@ export default function UsersPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent className="max-w-[90vw] rounded-xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Akun {deleteTarget?.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Akun akan dihapus permanen. Riwayat transaksi yang dibuat oleh akun ini tidak akan terhapus, tapi nama
-              kasir akan tampil sebagai "—".
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t('users.deleteDialog.title', { name: deleteTarget?.name ?? '' })}</AlertDialogTitle>
+            <AlertDialogDescription>{t('users.deleteDialog.description')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogCancel>{t('users.deleteDialog.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Hapus
+              {t('users.deleteDialog.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

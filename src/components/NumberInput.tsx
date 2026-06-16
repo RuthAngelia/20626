@@ -1,4 +1,7 @@
 import { Input } from '@/components/ui/input';
+import { useTranslation } from 'react-i18next';
+
+const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 interface NumberInputProps {
   /** Raw numeric value as string. Integer mode: "10000". Decimal mode: dot-decimal "1.5". */
@@ -11,9 +14,9 @@ interface NumberInputProps {
   decimal?: boolean;
 }
 
-const formatInt = (raw: string) => {
+const formatInt = (raw: string, locale: string) => {
   if (!raw) return '';
-  return Number(raw).toLocaleString('id-ID');
+  return Number(raw).toLocaleString(locale);
 };
 
 /**
@@ -21,10 +24,10 @@ const formatInt = (raw: string) => {
  * Bagian desimal dibawa apa adanya (string) agar trailing koma/nol tidak hilang
  * saat user sedang mengetik (mis. "12," atau "12,50").
  */
-const formatDecimal = (raw: string) => {
+const formatDecimal = (raw: string, locale: string) => {
   if (!raw) return '';
   const [intPart, decPart = ''] = raw.split('.');
-  const intFmt = intPart === '' ? '0' : Number(intPart).toLocaleString('id-ID');
+  const intFmt = intPart === '' ? '0' : Number(intPart).toLocaleString(locale);
   return raw.includes('.') ? `${intFmt},${decPart}` : intFmt;
 };
 
@@ -48,11 +51,14 @@ const parseDecimal = (input: string): string => {
  * input pecahan (mis. 1,5 kg).
  */
 export default function NumberInput({ value, onChange, placeholder, className, decimal }: NumberInputProps) {
+  const { i18n } = useTranslation();
+  const numberLocale = NUMBER_LOCALES[i18n.language] ?? 'id-ID';
+
   return (
     <Input
       type="text"
       inputMode={decimal ? 'decimal' : 'numeric'}
-      value={decimal ? formatDecimal(value) : formatInt(value)}
+      value={decimal ? formatDecimal(value, numberLocale) : formatInt(value, numberLocale)}
       onChange={e => {
         if (decimal) {
           onChange(parseDecimal(e.target.value));
