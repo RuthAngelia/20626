@@ -139,10 +139,20 @@ export default function CloudBackupSettings() {
   }, [pendingTxId, checkPayment]);
 
   const handleVerifyNativePurchase = async (transaction: any) => {
-    const purchaseToken = transaction.purchaseToken || transaction.token || transaction.id;
-    const productId = transaction.products?.[0]?.id;
+    console.log('Google Play Billing: Verifying transaction:', JSON.stringify(transaction));
+    
+    const purchaseToken = 
+      transaction.parentReceipt?.purchaseToken || 
+      transaction.parentReceipt?.token || 
+      transaction.purchaseToken || 
+      transaction.token || 
+      transaction.transactionId || 
+      transaction.id;
+      
+    const productId = transaction.products?.[0]?.id || transaction.productId;
     
     if (!purchaseToken || !productId) {
+      console.warn('Google Play Billing: Missing purchaseToken or productId. purchaseToken:', purchaseToken, 'productId:', productId);
       toast.error(t('cloudBackup.toast.invalidPurchaseData', { defaultValue: 'Invalid purchase data from Google Play' }));
       return;
     }
