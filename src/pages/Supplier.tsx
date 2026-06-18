@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Supplier } from '@/lib/db';
 import { useState } from 'react';
-import { Truck, Plus, Edit2, Trash2, Phone, MapPin, Search } from 'lucide-react';
+import { Truck, Plus, Edit2, Trash2, Phone, MapPin, Search, ArrowLeft } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,11 +13,13 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import LockedPage from '@/components/LockedPage';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'Rp' };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
 
 export default function SupplierPage() {
+  const navigate = useNavigate();
   const { can } = useAuth();
   const { t } = useTranslation('settings');
 
@@ -74,10 +76,15 @@ export default function SupplierPage() {
   return (
     <div className="px-4 pt-6 pb-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <Truck className="w-5 h-5 text-primary" />
-          {t('supplier.title')}
-        </h1>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/settings')}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <Truck className="w-5 h-5 text-primary" />
+            {t('supplier.title')}
+          </h1>
+        </div>
         <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
           <Plus className="w-4 h-4" /> {t('supplier.add')}
         </Button>

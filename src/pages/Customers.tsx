@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Customer } from '@/lib/db';
 import { useState } from 'react';
-import { Users as UsersIcon, Plus, Edit2, Trash2, Phone, MapPin, Mail, Search, Eye, Receipt as ReceiptIcon, ShoppingBag, HandCoins } from 'lucide-react';
+import { Users as UsersIcon, Plus, Edit2, Trash2, Phone, MapPin, Mail, Search, Eye, Receipt as ReceiptIcon, ShoppingBag, HandCoins, ArrowLeft } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,10 +113,15 @@ export default function CustomersPage() {
   return (
     <div className="px-4 pt-6 pb-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <UsersIcon className="w-5 h-5 text-primary" />
-          {t('customers.title')}
-        </h1>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/settings')}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <h1 className="text-xl font-bold flex items-center gap-2">
+            <UsersIcon className="w-5 h-5 text-primary" />
+            {t('customers.title')}
+          </h1>
+        </div>
         <Button size="sm" onClick={openAdd} className="h-9 gap-1.5">
           <Plus className="w-4 h-4" /> {t('customers.add')}
         </Button>
