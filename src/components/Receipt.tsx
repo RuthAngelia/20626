@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import type { Transaction, StoreSettings, TransactionItemRecord } from '@/lib/db';
 import { isNativePlatform, printNativeBluetooth, getESCPOSData } from '@/lib/printer';
+import { Capacitor } from '@capacitor/core';
+import { downloadOrShareFile } from '@/lib/file-utils';
 
 const LOCALES: Record<string, Locale> = { id, en: enUS, ms };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -58,11 +60,21 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
   const handleDownload = async () => {
     const canvas = await captureReceipt();
     if (!canvas) return;
-    const link = document.createElement('a');
-    link.download = `struk-${transaction.receiptNumber}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    toast.success(t('receipt.toast.downloadSuccess'));
+    try {
+      const fileName = `struk-${transaction.receiptNumber}.png`;
+      const dataUrl = canvas.toDataURL('image/png');
+      await downloadOrShareFile(dataUrl, {
+        fileName,
+        mimeType: 'image/png',
+        dialogTitle: t('receipt.toast.downloadSuccess'),
+        shareTitle: t('receipt.shareTitle', { receiptNumber: transaction.receiptNumber }),
+        shareText: t('receipt.shareText', { storeName }),
+      });
+      toast.success(t('receipt.toast.downloadSuccess'));
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal mengunduh struk');
+    }
   };
 
   const handleShare = async () => {
@@ -70,11 +82,25 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
     if (!canvas) return;
 
     try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const fileName = `struk-${transaction.receiptNumber}.png`;
+
+      if (Capacitor.isNativePlatform()) {
+        await downloadOrShareFile(dataUrl, {
+          fileName,
+          mimeType: 'image/png',
+          dialogTitle: t('receipt.shareTitle', { receiptNumber: transaction.receiptNumber }),
+          shareTitle: t('receipt.shareTitle', { receiptNumber: transaction.receiptNumber }),
+          shareText: t('receipt.shareText', { storeName }),
+        });
+        return;
+      }
+
       const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
       if (!blob) return;
 
       if (navigator.share) {
-        const file = new File([blob], `struk-${transaction.receiptNumber}.png`, { type: 'image/png' });
+        const file = new File([blob], fileName, { type: 'image/png' });
         await navigator.share({
           title: t('receipt.shareTitle', { receiptNumber: transaction.receiptNumber }),
           text: t('receipt.shareText', { storeName }),

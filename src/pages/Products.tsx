@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/use-auth';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import { useTranslation } from 'react-i18next';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
+import { downloadOrShareFile } from '@/lib/file-utils';
 
 const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'Rp' };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -289,13 +290,12 @@ export default function Produk() {
 
       // Write to file
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Template_Import_Produk.xlsx';
-      a.click();
-      window.URL.revokeObjectURL(url);
+      await downloadOrShareFile(buffer as ArrayBuffer, {
+        fileName: 'Template_Import_Produk.xlsx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        dialogTitle: 'Simpan / Bagikan Template',
+        shareTitle: 'Template Import Produk',
+      });
       toast.success('Template berhasil diunduh!');
     } catch (err) {
       console.error(err);

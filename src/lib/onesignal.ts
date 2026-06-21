@@ -31,11 +31,9 @@ const APP_ID = import.meta.env.VITE_ONESIGNAL_APP_ID as string | undefined;
 
 let initialized = false;
 
-/** Apakah platform mendukung push notification (web SDK ini — web/PWA saja). */
+/** Apakah platform mendukung push notification. */
 export function isPushSupported(): boolean {
-  // OneSignal Web SDK tidak berlaku di WebView native (Android pakai plugin
-  // terpisah + FCM — ditunda). Jadi push hanya untuk web/PWA dulu.
-  if (isNativePlatform()) return false;
+  if (isNativePlatform()) return true;
   return (
     typeof window !== 'undefined' &&
     'Notification' in window &&
@@ -44,9 +42,13 @@ export function isPushSupported(): boolean {
   );
 }
 
-/** Status izin notifikasi browser saat ini. */
+/** Status izin notifikasi browser saat ini (hanya untuk Web). */
 export function getPermissionState(): NotificationPermission | 'unsupported' {
   if (!isPushSupported()) return 'unsupported';
+  if (isNativePlatform()) {
+    // Pada platform native, status dicek secara asinkron di komponen/hook
+    return 'default';
+  }
   return Notification.permission;
 }
 
@@ -60,6 +62,19 @@ function withOneSignal(cb: (os: OneSignalApi) => void | Promise<void>) {
 export function initOneSignal() {
   if (initialized || !APP_ID || !isPushSupported()) return;
   initialized = true;
+
+  if (isNativePlatform()) {
+    import('@onesignal/capacitor-plugin')
+      .then(({ default: OneSignal }) => {
+        OneSignal.initialize({ appId: APP_ID }).catch((err) => {
+          console.error('Gagal inisialisasi native OneSignal:', err);
+        });
+      })
+      .catch((err) => {
+        console.error('Gagal memuat @onesignal/capacitor-plugin:', err);
+      });
+    return;
+  }
 
   window.OneSignalDeferred = window.OneSignalDeferred || [];
 
@@ -81,15 +96,51 @@ export function initOneSignal() {
 
 /** Kaitkan device ke user (External ID = profile.user.id, mis. "google-12345"). */
 export function oneSignalLogin(externalId: string) {
+  if (isNativePlatform()) {
+    import('@onesignal/capacitor-plugin')
+      .then(({ default: OneSignal }) => {
+        OneSignal.login(externalId).catch((err) => {
+          console.error('Gagal login native OneSignal:', err);
+        });
+      })
+      .catch((err) => {
+        console.error('Gagal memuat @onesignal/capacitor-plugin:', err);
+      });
+    return;
+  }
   withOneSignal((OneSignal) => OneSignal.login(externalId));
 }
 
 /** Lepas kaitan device dari user (saat logout). */
 export function oneSignalLogout() {
+  if (isNativePlatform()) {
+    import('@onesignal/capacitor-plugin')
+      .then(({ default: OneSignal }) => {
+        OneSignal.logout().catch((err) => {
+          console.error('Gagal logout native OneSignal:', err);
+        });
+      })
+      .catch((err) => {
+        console.error('Gagal memuat @onesignal/capacitor-plugin:', err);
+      });
+    return;
+  }
   withOneSignal((OneSignal) => OneSignal.logout());
 }
 
-/** Munculkan prompt izin notifikasi browser (dipanggil setelah user setuju di modal). */
+/** Munculkan prompt izin notifikasi browser/native (dipanggil setelah user setuju di modal). */
 export function requestPushPermission() {
+  if (isNativePlatform()) {
+    import('@onesignal/capacitor-plugin')
+      .then(({ default: OneSignal }) => {
+        OneSignal.Notifications.requestPermission(true).catch((err) => {
+          console.error('Gagal meminta izin notifikasi native:', err);
+        });
+      })
+      .catch((err) => {
+        console.error('Gagal memuat @onesignal/capacitor-plugin:', err);
+      });
+    return;
+  }
   withOneSignal((OneSignal) => OneSignal.Notifications.requestPermission());
 }

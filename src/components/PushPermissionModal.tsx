@@ -3,6 +3,7 @@ import { Bell, CloudUpload, CreditCard, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCloudAuth } from '@/hooks/use-cloud-auth';
 import { isPushSupported, getPermissionState, requestPushPermission } from '@/lib/onesignal';
+import { isNativePlatform } from '@/lib/printer';
 import { useTranslation } from 'react-i18next';
 
 const ASKED_KEY = 'freekasir_push_asked_v1';
@@ -15,10 +16,35 @@ export default function PushPermissionModal() {
   useEffect(() => {
     if (!isLoggedIn) return;
     if (!isPushSupported()) return;
-    if (getPermissionState() !== 'default') return;
     if (localStorage.getItem(ASKED_KEY)) return;
-    const timer = setTimeout(() => setOpen(true), 800);
-    return () => clearTimeout(timer);
+
+    let active = true;
+    let timer: NodeJS.Timeout | undefined;
+
+    const checkPermission = async () => {
+      if (isNativePlatform()) {
+        try {
+          const { default: OneSignal } = await import('@onesignal/capacitor-plugin');
+          const hasPermission = await OneSignal.Notifications.hasPermission();
+          if (hasPermission) return;
+        } catch (err) {
+          console.error('Gagal memeriksa izin notifikasi native:', err);
+        }
+      } else {
+        if (getPermissionState() !== 'default') return;
+      }
+
+      if (active) {
+        timer = setTimeout(() => setOpen(true), 800);
+      }
+    };
+
+    checkPermission();
+
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
   }, [isLoggedIn]);
 
   const dismiss = () => {

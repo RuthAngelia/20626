@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { format } from 'date-fns';
 import { id as localeId, enUS, ms as localeMs } from 'date-fns/locale';
 import type { Locale } from 'date-fns';
+import { downloadOrShareFile } from '@/lib/file-utils';
 
 const DATE_LOCALES: Record<string, Locale> = { id: localeId, en: enUS, ms: localeMs };
 
@@ -248,11 +249,13 @@ export default function StockOpnamePage() {
       ws.getColumn(6).width = 25;
 
       const buffer = await wb.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `Templat_Stock_Opname_${format(new Date(), 'yyyyMMdd_HHmmss')}.xlsx`;
-      link.click();
+      const fileName = `Templat_Stock_Opname_${format(new Date(), 'yyyyMMdd_HHmmss')}.xlsx`;
+      await downloadOrShareFile(buffer as ArrayBuffer, {
+        fileName,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        dialogTitle: 'Simpan / Bagikan Templat',
+        shareTitle: 'Templat Stock Opname',
+      });
       toast.success('Templat Excel berhasil diunduh');
     } catch (err) {
       console.error(err);

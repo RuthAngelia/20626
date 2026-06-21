@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { isNativePlatform, printRawNativeBluetooth, getDailyReportESCPOSData, type DailyReportPrintData } from '@/lib/printer';
+import { Capacitor } from '@capacitor/core';
+import { downloadOrShareFile } from '@/lib/file-utils';
 
 interface DailyReportReceiptProps {
   open: boolean;
@@ -46,11 +48,21 @@ export default function DailyReportReceipt({ open, onClose, data }: DailyReportR
   const handleDownload = async () => {
     const canvas = await captureReceipt();
     if (!canvas) return;
-    const link = document.createElement('a');
-    link.download = `laporan-closing-${data.dateStr}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    toast.success(t('dailyReceipt.downloadSuccess'));
+    try {
+      const fileName = `laporan-closing-${data.dateStr}.png`;
+      const dataUrl = canvas.toDataURL('image/png');
+      await downloadOrShareFile(dataUrl, {
+        fileName,
+        mimeType: 'image/png',
+        dialogTitle: t('dailyReceipt.downloadSuccess'),
+        shareTitle: `${t('dailyReceipt.shareTitle')} ${data.dateStr}`,
+        shareText: t('dailyReceipt.shareText', { storeName: data.storeSettings?.storeName || t('dailyReceipt.storeFallback') }),
+      });
+      toast.success(t('dailyReceipt.downloadSuccess'));
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal mengunduh laporan');
+    }
   };
 
   const rp = (n: number) => `${currencySymbol} ${n.toLocaleString(numberLocale)}`;
@@ -60,11 +72,25 @@ export default function DailyReportReceipt({ open, onClose, data }: DailyReportR
     if (!canvas) return;
 
     try {
+      const dataUrl = canvas.toDataURL('image/png');
+      const fileName = `laporan-closing-${data.dateStr}.png`;
+
+      if (Capacitor.isNativePlatform()) {
+        await downloadOrShareFile(dataUrl, {
+          fileName,
+          mimeType: 'image/png',
+          dialogTitle: `${t('dailyReceipt.shareTitle')} ${data.dateStr}`,
+          shareTitle: `${t('dailyReceipt.shareTitle')} ${data.dateStr}`,
+          shareText: t('dailyReceipt.shareText', { storeName: data.storeSettings?.storeName || t('dailyReceipt.storeFallback') }),
+        });
+        return;
+      }
+
       const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
       if (!blob) return;
 
       if (navigator.share) {
-        const file = new File([blob], `laporan-closing-${data.dateStr}.png`, { type: 'image/png' });
+        const file = new File([blob], fileName, { type: 'image/png' });
         await navigator.share({
           title: `${t('dailyReceipt.shareTitle')} ${data.dateStr}`,
           text: t('dailyReceipt.shareText', { storeName: data.storeSettings?.storeName || t('dailyReceipt.storeFallback') }),
