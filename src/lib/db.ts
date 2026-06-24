@@ -699,6 +699,45 @@ export function isStockManaged(product: Pick<Product, 'trackStock'>): boolean {
   return product.trackStock !== false;
 }
 
+async function sanitizeTableDates(table: any, dateFields: string[]) {
+  try {
+    await table.toCollection().modify((record: any) => {
+      let changed = false;
+      for (const field of dateFields) {
+        if (record[field] !== undefined && record[field] !== null && typeof record[field] === 'string') {
+          const parsed = new Date(record[field]);
+          if (!isNaN(parsed.getTime())) {
+            record[field] = parsed;
+            changed = true;
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.error(`Failed to sanitize table ${table.name || 'unknown'} dates:`, err);
+  }
+}
+
+export async function sanitizeDatabaseDates() {
+  await sanitizeTableDates(db.categories, ['createdAt', 'deletedAt']);
+  await sanitizeTableDates(db.products, ['createdAt', 'updatedAt', 'deletedAt']);
+  await sanitizeTableDates(db.suppliers, ['createdAt', 'deletedAt']);
+  await sanitizeTableDates(db.customers, ['createdAt', 'deletedAt']);
+  await sanitizeTableDates(db.stockIns, ['date']);
+  await sanitizeTableDates(db.stockOuts, ['date']);
+  await sanitizeTableDates(db.hppHistory, ['date']);
+  await sanitizeTableDates(db.paymentMethods, ['createdAt']);
+  await sanitizeTableDates(db.transactions, ['date', 'openedAt', 'closedAt']);
+  await sanitizeTableDates(db.users, ['createdAt', 'lastLoginAt']);
+  await sanitizeTableDates(db.units, ['createdAt', 'deletedAt']);
+  await sanitizeTableDates(db.expenseCategories, ['createdAt', 'deletedAt']);
+  await sanitizeTableDates(db.expenses, ['date', 'createdAt', 'deletedAt']);
+  await sanitizeTableDates(db.debts, ['createdAt', 'settledAt']);
+  await sanitizeTableDates(db.debtPayments, ['date']);
+  await sanitizeTableDates(db.stockOpnames, ['date']);
+  await sanitizeTableDates(db.storeSettings, ['lastBackupAt', 'lastCloudBackupAt']);
+}
+
 // Seed default data
 export async function seedDefaultData() {
   const categoryCount = await db.categories.count();
@@ -768,4 +807,7 @@ export async function seedDefaultData() {
       { name: 'Lainnya',        color: '#6B7280', icon: '📦', isDefault: 1, createdAt: now, isDeleted: 0, deletedAt: null },
     ]);
   }
+
+  // Sanitize any dates stored as string (e.g. from restored backup)
+  await sanitizeDatabaseDates();
 }

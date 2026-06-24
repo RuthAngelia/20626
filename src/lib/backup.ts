@@ -1,4 +1,4 @@
-import { db, type Product } from '@/lib/db';
+import { db, type Product, sanitizeDatabaseDates } from '@/lib/db';
 
 /**
  * Shared backup/restore core, dipakai oleh:
@@ -201,6 +201,9 @@ export async function restoreFromBackupData(data: unknown): Promise<void> {
         }
       }
     }
+
+    // Convert string-serialized dates to native Date objects
+    await sanitizeDatabaseDates();
   } catch (importErr) {
     // Rollback ke snapshot.
     try {

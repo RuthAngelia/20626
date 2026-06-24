@@ -75,6 +75,7 @@ describe('Backup and Restore Logic', () => {
     expect(products[0].name).toBe('Product 2');
     expect(stockOpnames).toHaveLength(1);
     expect(stockOpnames[0].notes).toBe('Draft Opname');
+    expect(stockOpnames[0].date).toBeInstanceOf(Date);
     expect(stockOpnameItems).toHaveLength(1);
     expect(stockOpnameItems[0].difference).toBe(0);
   });
