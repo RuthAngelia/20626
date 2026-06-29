@@ -54,15 +54,26 @@ export interface Category {
   deletedAt: Date | null;
 }
 
+export interface ProductVariant {
+  id: string; // unique string identifier (e.g. crypto.randomUUID())
+  name: string; // e.g., "Large", "Red"
+  sku: string;
+  price: number;
+  hpp: number;
+  stock: number;
+}
+
 export interface Product {
   id?: number;
   name: string;
   sku: string;
   categoryId: number;
-  price: number; // harga jual
-  hpp: number; // harga pokok penjualan
-  stock: number;
-  trackStock?: boolean; // true/undefined = stok dikelola (default lama), false = stok tidak dikelola (selalu tersedia)
+  price: number; // harga jual (base price if hasVariants is true)
+  hpp: number; // harga pokok penjualan (base HPP if hasVariants is true)
+  stock: number; // total stock or base stock
+  hasVariants?: boolean;
+  variants?: ProductVariant[];
+  trackStock?: boolean; // true/undefined = stok dikelola, false = stok tidak dikelola
   unit: string; // satuan: pcs, kg, liter, dll
   description?: string; // deskripsi/catatan produk (opsional, multi-line)
   photo?: string; // base64 or blob URL
@@ -192,6 +203,8 @@ export interface TransactionItemRecord {
   discountAmount: number;
   subtotal: number;
   notes?: string;
+  variantId?: string;
+  variantName?: string;
 }
 
 export interface Unit {
@@ -271,6 +284,18 @@ export interface StoreSettings {
   printLogo?: boolean; // toggle to print store logo on ESC/POS receipt
 }
 
+export interface AuditLog {
+  id?: number;
+  action: 'create' | 'update' | 'delete';
+  entity: 'transaction' | 'product' | 'expense' | 'debt' | 'stock_in' | 'stock_out' | 'customer' | 'supplier' | 'user';
+  entityId?: number;
+  entityLabel?: string;  // e.g. "Nasi Goreng", "TRX-001"
+  detail?: string;       // Human-readable description
+  userId?: number;
+  userName?: string;
+  createdAt: Date;
+}
+
 // === Database ===
 
 class PosDatabase extends Dexie {
@@ -293,6 +318,7 @@ class PosDatabase extends Dexie {
   debtPayments!: Table<DebtPayment>;
   stockOpnames!: Table<StockOpname>;
   stockOpnameItems!: Table<StockOpnameItem>;
+  auditLogs!: Table<AuditLog>;
 
   constructor() {
     super('kasirgratisan-db');
@@ -688,6 +714,54 @@ class PosDatabase extends Dexie {
       stockOpnames:      '++id, date, status, createdBy',
       stockOpnameItems:  '++id, opnameId, productId, [opnameId+productId]',
     });
+
+    // Version 14 - Add auditLogs table
+    this.version(14).stores({
+      categories:        '++id, name, isDeleted',
+      products:          '++id, name, &sku, categoryId, barcode, isDeleted, createdBy, updatedBy, unit',
+      suppliers:         '++id, name, isDeleted',
+      customers:         '++id, name, isDeleted',
+      stockIns:          '++id, productId, supplierId, date, createdBy',
+      stockOuts:         '++id, productId, date, createdBy',
+      hppHistory:        '++id, productId, date',
+      paymentMethods:    '++id, name, category',
+      transactions:      '++id, date, &receiptNumber, paymentMethodId, status, orderNumber, createdBy',
+      transactionItems:  '++id, transactionId, productId',
+      storeSettings:     '++id',
+      units:             '++id, &name, isDeleted',
+      users:             '++id, &username, role, isActive',
+      expenseCategories: '++id, name, isDeleted',
+      expenses:          '++id, date, categoryId, paymentMethodId, createdBy, isDeleted',
+      debts:             '++id, &transactionId, customerId, status, createdAt',
+      debtPayments:      '++id, debtId, date, paymentMethodId, createdBy',
+      stockOpnames:      '++id, date, status, createdBy',
+      stockOpnameItems:  '++id, opnameId, productId, [opnameId+productId]',
+      auditLogs:         '++id, action, entity, entityId, userId, createdAt',
+    });
+
+    // Version 15 - Support for variants in Product and TransactionItemRecord (no index changes needed as they are nested/optional)
+    this.version(15).stores({
+      categories:        '++id, name, isDeleted',
+      products:          '++id, name, &sku, categoryId, barcode, isDeleted, createdBy, updatedBy, unit',
+      suppliers:         '++id, name, isDeleted',
+      customers:         '++id, name, isDeleted',
+      stockIns:          '++id, productId, supplierId, date, createdBy',
+      stockOuts:         '++id, productId, date, createdBy',
+      hppHistory:        '++id, productId, date',
+      paymentMethods:    '++id, name, category',
+      transactions:      '++id, date, &receiptNumber, paymentMethodId, status, orderNumber, createdBy',
+      transactionItems:  '++id, transactionId, productId',
+      storeSettings:     '++id',
+      units:             '++id, &name, isDeleted',
+      users:             '++id, &username, role, isActive',
+      expenseCategories: '++id, name, isDeleted',
+      expenses:          '++id, date, categoryId, paymentMethodId, createdBy, isDeleted',
+      debts:             '++id, &transactionId, customerId, status, createdAt',
+      debtPayments:      '++id, debtId, date, paymentMethodId, createdBy',
+      stockOpnames:      '++id, date, status, createdBy',
+      stockOpnameItems:  '++id, opnameId, productId, [opnameId+productId]',
+      auditLogs:         '++id, action, entity, entityId, userId, createdAt',
+    });
   }
 }
 
@@ -736,6 +810,7 @@ export async function sanitizeDatabaseDates() {
   await sanitizeTableDates(db.debtPayments, ['date']);
   await sanitizeTableDates(db.stockOpnames, ['date']);
   await sanitizeTableDates(db.storeSettings, ['lastBackupAt', 'lastCloudBackupAt']);
+  await sanitizeTableDates(db.auditLogs, ['createdAt']);
 }
 
 // Seed default data

@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Settings, Store, CreditCard, Tag, Download, Edit2, Info, Truck, ArrowDownToLine, ArrowUpFromLine, ChevronRight, Receipt, Palette, HardDrive, Package, Camera, X, Ruler, Users as UsersIcon, ShieldCheck, LogOut, Smartphone, CheckCircle2, Globe, Share2, Wallet, Sparkles, LineChart, Cloud, HandCoins, ClipboardCheck, LayoutGrid } from 'lucide-react';
+import { Settings, Store, CreditCard, Tag, Download, Edit2, Info, Truck, ArrowDownToLine, ArrowUpFromLine, ChevronRight, Receipt, Palette, HardDrive, Package, Camera, X, Ruler, Users as UsersIcon, ShieldCheck, LogOut, Smartphone, CheckCircle2, Globe, Share2, Wallet, Sparkles, LineChart, Cloud, HandCoins, ClipboardCheck, LayoutGrid, History } from 'lucide-react';
 import WhatsNewModal from '@/components/WhatsNewModal';
 import { FEATURES, getUnseenFeatures } from '@/lib/whats-new';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -697,6 +697,18 @@ export default function Pengaturan() {
               <CardContent className="p-3 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-success/10 text-success flex items-center justify-center"><Download className="w-4 h-4" /></div>
                 <div className="flex-1"><p className="text-sm font-semibold">{t('masterData.backup.title')}</p><p className="text-[10px] text-muted-foreground">{t('masterData.backup.description')}</p></div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+
+        {can('manage_store_settings') && (
+          <Link to="/settings/audit-log" className="block mt-2">
+            <Card className="border-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+              <CardContent className="p-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center"><History className="w-4 h-4" /></div>
+                <div className="flex-1"><p className="text-sm font-semibold">Audit Log</p><p className="text-[10px] text-muted-foreground">Catatan aktivitas pengguna</p></div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </CardContent>
             </Card>

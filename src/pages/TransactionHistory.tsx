@@ -21,6 +21,7 @@ import ReceiptDialog from '@/components/Receipt';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/use-auth';
 import { useTranslation } from 'react-i18next';
+import { audit } from '@/lib/audit';
 
 const LOCALES: Record<string, Locale> = { id: idLocale, en: enUS, ms };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -43,6 +44,10 @@ export default function TransactionHistory() {
   const [restoreStock, setRestoreStock] = useState(true);
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'open'>('all');
   const [filterCashier, setFilterCashier] = useState<string>('all');
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState<string>('all');
+  const [filterMinTotal, setFilterMinTotal] = useState<string>('');
+  const [filterMaxTotal, setFilterMaxTotal] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'latest' | 'oldest' | 'highest' | 'lowest'>('latest');
 
   const transactions = useLiveQuery(() =>
     db.transactions.orderBy('date').reverse().toArray()
@@ -106,6 +111,12 @@ export default function TransactionHistory() {
       const txDate = new Date(tx.date);
       if (txDate > endOfDay(dateTo)) return false;
     }
+    // Payment Method filter
+    if (filterPaymentMethod !== 'all' && String(tx.paymentMethodId) !== filterPaymentMethod) return false;
+    // Total Range filter
+    if (filterMinTotal && tx.total < Number(filterMinTotal)) return false;
+    if (filterMaxTotal && tx.total > Number(filterMaxTotal)) return false;
+
     // Search filter
     if (search) {
       const q = search.toLowerCase();
@@ -117,6 +128,18 @@ export default function TransactionHistory() {
     }
     return true;
   }) ?? [];
+
+  // Sort
+  filtered.sort((a, b) => {
+    switch (sortOrder) {
+      case 'oldest': return new Date(a.date).getTime() - new Date(b.date).getTime();
+      case 'highest': return b.total - a.total;
+      case 'lowest': return a.total - b.total;
+      case 'latest':
+      default:
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+    }
+  });
 
   // Group by date
   const grouped = filtered.reduce<Record<string, Transaction[]>>((acc, tx) => {
@@ -164,12 +187,21 @@ export default function TransactionHistory() {
         for (const item of items) {
           const product = await db.products.get(item.productId);
           if (product) {
-            await db.products.update(item.productId, { stock: product.stock + item.quantity });
+            if (item.variantId && product.variants) {
+              const vIndex = product.variants.findIndex(v => v.id === item.variantId);
+              if (vIndex !== -1) {
+                product.variants[vIndex].stock += item.quantity;
+                await db.products.update(product.id!, { variants: product.variants });
+              }
+            } else {
+              await db.products.update(item.productId, { stock: product.stock + item.quantity });
+            }
           }
         }
       }
       await db.transactionItems.where('transactionId').equals(selectedTx.id).delete();
       await db.transactions.delete(selectedTx.id);
+      await audit.delete('transaction', selectedTx.id, selectedTx.receiptNumber, 'Delete transaction from history', currentUser);
       setDeleteDialogOpen(false);
       setDetailOpen(false);
       setSelectedTx(null);
@@ -251,6 +283,65 @@ export default function TransactionHistory() {
           </Button>
         )}
       </div>
+
+      {/* Advanced Filters */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+        {paymentMethods && paymentMethods.length > 0 && (
+          <Select value={filterPaymentMethod} onValueChange={setFilterPaymentMethod}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Metode Pembayaran" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Metode</SelectItem>
+              {paymentMethods.map(pm => (
+                <SelectItem key={pm.id} value={String(pm.id)}>{pm.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        <Input
+          type="number"
+          placeholder="Min. Total"
+          value={filterMinTotal}
+          onChange={e => setFilterMinTotal(e.target.value)}
+          className="h-9 text-xs"
+        />
+        <Input
+          type="number"
+          placeholder="Max. Total"
+          value={filterMaxTotal}
+          onChange={e => setFilterMaxTotal(e.target.value)}
+          className="h-9 text-xs"
+        />
+        <Select value={sortOrder} onValueChange={(val: any) => setSortOrder(val)}>
+          <SelectTrigger className="h-9 text-xs">
+            <SelectValue placeholder="Urutkan" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="latest">Terbaru</SelectItem>
+            <SelectItem value="oldest">Terlama</SelectItem>
+            <SelectItem value="highest">Total Tertinggi</SelectItem>
+            <SelectItem value="lowest">Total Terendah</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      {(filterPaymentMethod !== 'all' || filterMinTotal || filterMaxTotal || sortOrder !== 'latest' || filterStatus !== 'all' || filterCashier !== 'all' || dateFrom || dateTo || search) && (
+        <div className="flex justify-end mb-4">
+          <Button variant="ghost" size="sm" className="h-8 text-xs text-destructive" onClick={() => {
+            setSearch('');
+            setFilterStatus('all');
+            setFilterCashier('all');
+            setFilterPaymentMethod('all');
+            setFilterMinTotal('');
+            setFilterMaxTotal('');
+            setSortOrder('latest');
+            clearDateFilter();
+          }}>
+            Reset Filter
+          </Button>
+        </div>
+      )}
 
       {/* Status filter tabs */}
       <div className="flex gap-1.5 mb-4">
@@ -449,7 +540,7 @@ export default function TransactionHistory() {
                 {getTxItems(selectedTx.id).map((item, i) => (
                   <div key={i} className="flex justify-between items-start bg-muted/30 p-2.5 rounded-lg">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium">{item.productName}</p>
+                      <p className="text-sm font-medium">{item.productName}{item.variantName ? ` - ${item.variantName}` : ''}</p>
                       <p className="text-[10px] text-muted-foreground">
                         {t('transactionHistory.detail.quantityFormat', { qty: item.quantity, price: rp(item.price) })}
                         {item.discountAmount > 0 && ` (${t('transactionHistory.detail.discount', { amount: rp(item.discountAmount) })})`}

@@ -45,6 +45,7 @@ import CloudHistorySettings from "./pages/settings/CloudHistorySettings";
 import CloudStoreSettings from "./pages/settings/CloudStoreSettings";
 import CloudOnlineStoreSettings from "./pages/settings/CloudOnlineStoreSettings";
 import NotFound from "./pages/NotFound";
+import AuditLog from "./pages/AuditLog";
 
 const queryClient = new QueryClient();
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
@@ -292,6 +293,14 @@ const App = () => {
                     element={
                       <ErrorBoundary>
                         <CloudOnlineStoreSettings />
+                      </ErrorBoundary>
+                    }
+                  />
+                  <Route
+                    path="/settings/audit-log"
+                    element={
+                      <ErrorBoundary>
+                        <AuditLog />
                       </ErrorBoundary>
                     }
                   />

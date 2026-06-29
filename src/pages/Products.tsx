@@ -21,6 +21,7 @@ import BarcodeScanner from '@/components/BarcodeScanner';
 import { useTranslation } from 'react-i18next';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { downloadOrShareFile } from '@/lib/file-utils';
+import { audit } from '@/lib/audit';
 
 const CURRENCY_SYMBOL: Record<string, string> = { id: 'Rp', en: 'Rp', ms: 'Rp' };
 const NUMBER_LOCALES: Record<string, string> = { id: 'id-ID', en: 'en-US', ms: 'ms-MY' };
@@ -53,10 +54,8 @@ export default function Produk() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
-  // Field tujuan hasil scan kamera: SKU atau Barcode.
   const [scanTarget, setScanTarget] = useState<'sku' | 'barcode' | null>(null);
 
-  // Excel Import States
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -64,7 +63,6 @@ export default function Produk() {
   const [hasMoreThan100, setHasMoreThan100] = useState(false);
   const importFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state
   const [name, setName] = useState('');
   const [sku, setSku] = useState('');
   const [categoryId, setCategoryId] = useState<string>('');
@@ -78,11 +76,13 @@ export default function Produk() {
   const [photo, setPhoto] = useState<string | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+
   const products = useLiveQuery(() => db.products.where('isDeleted').equals(0).toArray());
   const categories = useLiveQuery(() => db.categories.where('isDeleted').equals(0).toArray());
   const units = useLiveQuery(() => db.units.where('isDeleted').equals(0).toArray());
 
-  // Compose dropdown options: active master units + current product's unit if it has been deleted/renamed
   const unitOptions = (() => {
     const names = (units ?? []).map(u => u.name);
     if (unit && !names.includes(unit)) names.push(unit);
@@ -111,12 +111,14 @@ export default function Produk() {
     }
     setEditProduct(null);
     setName(''); setSku(''); setCategoryId(categories[0]?.id?.toString() ?? ''); setPrice(''); setHpp(''); setStock(''); setTrackStock(true); setUnit('pcs'); setBarcode(''); setDescription(''); setPhoto(undefined);
+    setHasVariants(false); setVariants([]);
     setDialogOpen(true);
   };
 
   const openEdit = (p: Product) => {
     setEditProduct(p);
     setName(p.name); setSku(p.sku); setCategoryId(p.categoryId.toString()); setPrice(p.price.toString()); setHpp(p.hpp.toString()); setStock(p.stock.toString()); setTrackStock(isStockManaged(p)); setUnit(p.unit); setBarcode(p.barcode ?? ''); setDescription(p.description ?? ''); setPhoto(p.photo);
+    setHasVariants(p.hasVariants || false); setVariants(p.variants || []);
     setDialogOpen(true);
   };
 
@@ -133,31 +135,26 @@ export default function Produk() {
     } catch {
       toast.error(t('toast.processImageFailed'));
     }
-    // Reset input so same file can be selected again
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSave = async () => {
-    if (!name.trim() || !categoryId || !sku.trim()) return;
+    if (!name.trim() || !categoryId || (!hasVariants && !sku.trim())) return;
 
-    // Check SKU uniqueness
-    const existing = await db.products
-      .where('sku')
-      .equals(sku.trim())
-      .filter(p => p.isDeleted === 0)
-      .first();
-    if (existing && existing.id !== editProduct?.id) {
-      toast.error(t('toast.skuExists', { sku: sku.trim(), name: existing.name }));
+    if (hasVariants && variants.length === 0) {
+      toast.error('Produk dengan varian harus memiliki minimal 1 varian');
       return;
     }
 
     const data = {
       name: name.trim(),
-      sku: sku.trim(),
+      sku: hasVariants ? "" : sku.trim(),
       categoryId: Number(categoryId),
-      price: Number(price) || 0,
-      hpp: Number(hpp) || 0,
-      stock: Number(stock) || 0,
+      price: hasVariants ? (variants[0]?.price || 0) : Number(price) || 0,
+      hpp: hasVariants ? (variants[0]?.hpp || 0) : Number(hpp) || 0,
+      stock: hasVariants ? variants.reduce((sum, v) => sum + v.stock, 0) : Number(stock) || 0,
+      hasVariants,
+      variants,
       trackStock,
       unit: unit.trim() || 'pcs',
       description: description.trim() || undefined,
@@ -169,15 +166,17 @@ export default function Produk() {
 
     if (editProduct?.id) {
       await db.products.update(editProduct.id, data);
+      await audit.update('product', editProduct.id, data.name, `Update product ${data.sku}`, currentUser);
       trackEvent('edit_product');
     } else {
-      await db.products.add({
+      const newId = await db.products.add({
         ...data,
         createdAt: new Date(),
         createdBy: currentUser?.id,
         isDeleted: 0,
         deletedAt: null,
       } as Product);
+      await audit.create('product', newId as number, data.name, `Create product ${data.sku}`, currentUser);
       trackEvent('create_product');
     }
     setDialogOpen(false);
@@ -185,11 +184,13 @@ export default function Produk() {
 
   const handleDelete = async () => {
     if (deleteId) {
+      const product = await db.products.get(deleteId);
       await db.products.update(deleteId, {
         isDeleted: 1,
         deletedAt: new Date(),
         updatedBy: currentUser?.id,
       });
+      await audit.delete('product', deleteId, product?.name || 'Unknown', 'Delete product', currentUser);
       setDeleteId(null);
     }
   };
@@ -201,7 +202,6 @@ export default function Produk() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Template Produk');
 
-      // Setup headers
       worksheet.columns = [
         { header: 'Nama Produk *', key: 'name', width: 25 },
         { header: 'SKU *', key: 'sku', width: 15 },
@@ -215,20 +215,18 @@ export default function Produk() {
         { header: 'Deskripsi', key: 'description', width: 30 }
       ];
 
-      // Style header row
       const headerRow = worksheet.getRow(1);
       headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       headerRow.eachCell((cell) => {
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
-          fgColor: { argb: 'FF4F46E5' } // Indigo-600
+          fgColor: { argb: 'FF4F46E5' }
         };
         cell.alignment = { vertical: 'middle', horizontal: 'left' };
       });
       headerRow.height = 24;
 
-      // Add a couple of examples
       worksheet.addRow({
         name: 'Kopi Susu Gula Aren',
         sku: 'KOPI-001',
@@ -242,20 +240,6 @@ export default function Produk() {
         description: 'Kopi susu segar dengan gula aren murni'
       });
 
-      worksheet.addRow({
-        name: 'Nasi Goreng Spesial',
-        sku: 'NASGOR-001',
-        category: 'Makanan',
-        price: 22000,
-        hpp: 10000,
-        trackStock: 'Tidak',
-        stock: 0,
-        unit: 'porsi',
-        barcode: '',
-        description: 'Nasi goreng dengan topping telur dadar dan ayam suwir'
-      });
-
-      // Add a secondary sheet for referencing active categories and units
       const refSheet = workbook.addWorksheet('Daftar Referensi');
       refSheet.columns = [
         { header: 'Kategori yang Tersedia', key: 'categories', width: 25 },
@@ -265,16 +249,8 @@ export default function Produk() {
 
       const refHeaderRow = refSheet.getRow(1);
       refHeaderRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      refHeaderRow.getCell(1).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF0284C7' } // Sky-600
-      };
-      refHeaderRow.getCell(3).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF0D9488' } // Teal-600
-      };
+      refHeaderRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
+      refHeaderRow.getCell(3).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };
 
       const cats = categories || [];
       const unts = units || [];
@@ -288,7 +264,6 @@ export default function Produk() {
         ]);
       }
 
-      // Write to file
       const buffer = await workbook.xlsx.writeBuffer();
       await downloadOrShareFile(buffer as ArrayBuffer, {
         fileName: 'Template_Import_Produk.xlsx',
@@ -332,20 +307,17 @@ export default function Produk() {
           const tempRows: ParsedRow[] = [];
           const skuInFile = new Set<string>();
 
-          // Get active db categories & units for validation
           const activeCats = categories || [];
           const activeUnts = units || [];
 
-          // Get existing products in DB (including isDeleted: 1)
           const allDbProducts = await db.products.toArray();
           const dbSkus = new Set(allDbProducts.map(p => p.sku.toLowerCase().trim()));
           const dbProductsBySku = new Map(allDbProducts.map(p => [p.sku.toLowerCase().trim(), p.name]));
 
           let rowCount = 0;
           worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber === 1) return; // skip header row
+            if (rowNumber === 1) return;
 
-            // Check if row has any values to prevent processing empty rows
             let hasValue = false;
             row.eachCell((cell) => {
               if (cell.value !== null && cell.value !== undefined && cell.value !== '') {
@@ -357,22 +329,15 @@ export default function Produk() {
             rowCount++;
             if (rowCount > 100) {
               setHasMoreThan100(true);
-              return; // ignore rows after 100
+              return;
             }
 
-            // Extract values
             const getVal = (col: number): string => {
               const cell = row.getCell(col);
               if (cell.value && typeof cell.value === 'object') {
-                if ('richText' in cell.value) {
-                  return cell.value.richText.map(t => t.text).join('').trim();
-                }
-                if ('result' in cell.value) {
-                  return String(cell.value.result ?? '').trim();
-                }
-                if ('text' in cell.value) {
-                  return String(cell.value.text ?? '').trim();
-                }
+                if ('richText' in cell.value) return cell.value.richText.map(t => t.text).join('').trim();
+                if ('result' in cell.value) return String(cell.value.result ?? '').trim();
+                if ('text' in cell.value) return String(cell.value.text ?? '').trim();
                 return '';
               }
               return cell.value !== undefined && cell.value !== null ? String(cell.value).trim() : '';
@@ -391,60 +356,39 @@ export default function Produk() {
 
             const errors: string[] = [];
 
-            // Validation
-            if (!name) {
-              errors.push(t('excel.errorNameRequired'));
-            }
-            if (!sku) {
-              errors.push(t('excel.errorSkuRequired'));
-            } else {
+            if (!name) errors.push(t('excel.errorNameRequired'));
+            if (!sku) errors.push(t('excel.errorSkuRequired'));
+            else {
               const skuLower = sku.toLowerCase().trim();
-              if (skuInFile.has(skuLower)) {
-                errors.push(t('excel.errorSkuDupExcel'));
-              } else {
-                skuInFile.add(skuLower);
-              }
+              if (skuInFile.has(skuLower)) errors.push(t('excel.errorSkuDupExcel'));
+              else skuInFile.add(skuLower);
               if (dbSkus.has(skuLower)) {
                 const existingName = dbProductsBySku.get(skuLower);
                 errors.push(t('excel.errorSkuDupDb') + ` ("${existingName}")`);
               }
             }
 
-            // Check Category Name (case-insensitive)
             const matchedCat = activeCats.find(c => c.name.toLowerCase().trim() === categoryName.toLowerCase().trim());
-            if (!categoryName) {
-              errors.push(t('excel.errorCatNotFound'));
-            } else if (!matchedCat) {
-              errors.push(t('excel.errorCatNotFound') + `: "${categoryName}"`);
-            }
+            if (!categoryName) errors.push(t('excel.errorCatNotFound'));
+            else if (!matchedCat) errors.push(t('excel.errorCatNotFound') + `: "${categoryName}"`);
 
-            // Check Unit Name (case-insensitive)
             const matchedUnit = activeUnts.find(u => u.name.toLowerCase().trim() === unit.toLowerCase().trim());
-            if (!unit) {
-              errors.push(t('excel.errorUnitNotFound'));
-            } else if (!matchedUnit) {
-              errors.push(t('excel.errorUnitNotFound') + `: "${unit}"`);
-            }
+            if (!unit) errors.push(t('excel.errorUnitNotFound'));
+            else if (!matchedUnit) errors.push(t('excel.errorUnitNotFound') + `: "${unit}"`);
 
-            // Parse numbers (handling Rp, spaces, commas, dots)
             const cleanNumber = (val: string): number => {
               if (!val) return 0;
               let clean = val.replace(/Rp/gi, '').replace(/\s+/g, '');
               const lastDot = clean.lastIndexOf('.');
               const lastComma = clean.lastIndexOf(',');
-              if (lastDot > lastComma) {
-                clean = clean.replace(/,/g, '');
-              } else if (lastComma > lastDot) {
-                clean = clean.replace(/\./g, '').replace(/,/g, '.');
-              } else {
+              if (lastDot > lastComma) clean = clean.replace(/,/g, '');
+              else if (lastComma > lastDot) clean = clean.replace(/\./g, '').replace(/,/g, '.');
+              else {
                 const match = clean.match(/[.,](\d+)$/);
                 if (match) {
                   const decimals = match[1];
-                  if (decimals.length === 3) {
-                    clean = clean.replace(/[.,]/g, '');
-                  } else {
-                    clean = clean.replace(/[.,]/g, '.');
-                  }
+                  if (decimals.length === 3) clean = clean.replace(/[.,]/g, '');
+                  else clean = clean.replace(/[.,]/g, '.');
                 }
               }
               const parsed = Number(clean);
@@ -455,41 +399,18 @@ export default function Produk() {
             const hpp = hppStr ? cleanNumber(hppStr) : 0;
             const stock = stockStr ? cleanNumber(stockStr) : 0;
 
-            if (price < 0) {
-              errors.push(t('excel.errorPriceInvalid'));
-            }
-            if (hpp < 0) {
-              errors.push(t('excel.errorHppInvalid'));
-            }
+            if (price < 0) errors.push(t('excel.errorPriceInvalid'));
+            if (hpp < 0) errors.push(t('excel.errorHppInvalid'));
 
-            // Kelola Stok boolean: default to true
             let trackStock = true;
             if (trackStockStr) {
               const lower = trackStockStr.toLowerCase();
-              if (lower === 'tidak' || lower === 'no' || lower === 'false' || lower === '0' || lower === 'salah') {
-                trackStock = false;
-              }
+              if (lower === 'tidak' || lower === 'no' || lower === 'false' || lower === '0' || lower === 'salah') trackStock = false;
             }
 
-            if (trackStock && stock < 0) {
-              errors.push(t('excel.errorStockInvalid'));
-            }
+            if (trackStock && stock < 0) errors.push(t('excel.errorStockInvalid'));
 
-            tempRows.push({
-              rowNum: rowNumber,
-              name,
-              sku,
-              categoryName,
-              price: price >= 0 ? price : 0,
-              hpp: hpp >= 0 ? hpp : 0,
-              trackStock,
-              stock: stock >= 0 ? stock : 0,
-              unit,
-              barcode,
-              description,
-              isValid: errors.length === 0,
-              errors
-            });
+            tempRows.push({ rowNum: rowNumber, name, sku, categoryName, price: price >= 0 ? price : 0, hpp: hpp >= 0 ? hpp : 0, trackStock, stock: stock >= 0 ? stock : 0, unit, barcode, description, isValid: errors.length === 0, errors });
           });
 
           setImportRows(tempRows);
@@ -500,12 +421,7 @@ export default function Produk() {
           setIsValidating(false);
         }
       };
-
-      reader.onerror = () => {
-        toast.error('Gagal membaca file.');
-        setIsValidating(false);
-      };
-
+      reader.onerror = () => { toast.error('Gagal membaca file.'); setIsValidating(false); };
       reader.readAsArrayBuffer(file);
     } catch (err) {
       console.error(err);
@@ -516,43 +432,18 @@ export default function Produk() {
 
   const handleSaveImport = async () => {
     const validRows = importRows.filter(r => r.isValid);
-    if (validRows.length === 0) {
-      toast.error('Tidak ada data valid yang bisa disimpan.');
-      return;
-    }
+    if (validRows.length === 0) { toast.error('Tidak ada data valid yang bisa disimpan.'); return; }
 
     try {
       const now = new Date();
       const activeCats = categories || [];
-      
       const newProducts: Product[] = validRows.map(r => {
         const matchedCat = activeCats.find(c => c.name.toLowerCase().trim() === r.categoryName.toLowerCase().trim());
         const categoryId = matchedCat?.id || 0;
-
-        return {
-          name: r.name,
-          sku: r.sku,
-          categoryId,
-          price: r.price,
-          hpp: r.hpp,
-          stock: r.trackStock ? r.stock : 0,
-          trackStock: r.trackStock,
-          unit: r.unit,
-          barcode: r.barcode,
-          description: r.description,
-          photo: undefined,
-          createdAt: now,
-          updatedAt: now,
-          isDeleted: 0,
-          deletedAt: null,
-          createdBy: currentUser?.id,
-          updatedBy: currentUser?.id
-        };
+        return { name: r.name, sku: r.sku, categoryId, price: r.price, hpp: r.hpp, stock: r.trackStock ? r.stock : 0, trackStock: r.trackStock, unit: r.unit, barcode: r.barcode, description: r.description, photo: undefined, createdAt: now, updatedAt: now, isDeleted: 0, deletedAt: null, createdBy: currentUser?.id, updatedBy: currentUser?.id, hasVariants: false, variants: [] };
       });
-
       await db.products.bulkAdd(newProducts);
       trackEvent('import_products_excel');
-
       toast.success(t('excel.toastSuccess', { count: newProducts.length }));
       setImportDialogOpen(false);
       setImportRows([]);
@@ -565,7 +456,6 @@ export default function Produk() {
 
   return (
     <div className="px-4 pt-6 pb-4 space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <PackageIcon className="w-5 h-5 text-primary" />
@@ -585,16 +475,10 @@ export default function Produk() {
         )}
       </div>
 
-      {/* Search & Filter */}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder={t('searchPlaceholder')}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-10"
-          />
+          <Input placeholder={t('searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-10" />
         </div>
         <Select value={filterCategory} onValueChange={setFilterCategory}>
           <SelectTrigger className="w-[120px] h-10">
@@ -609,10 +493,8 @@ export default function Produk() {
         </Select>
       </div>
 
-      {/* Product count */}
       <p className="text-xs text-muted-foreground">{t('productCount', { count: filtered.length })}</p>
 
-      {/* Product List */}
       {filtered.length === 0 ? (
         <div className="text-center py-12">
           <PackageIcon className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
@@ -629,55 +511,52 @@ export default function Produk() {
             <Card key={p.id} className="border-0 shadow-sm">
               <CardContent className="p-3">
                 <div className="flex items-start gap-3">
-                  {/* Product thumbnail */}
                   <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
-                    {p.photo ? (
-                      <img src={p.photo} alt={p.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <PackageIcon className="w-5 h-5 text-muted-foreground/40" />
-                    )}
+                    {p.photo ? <img src={p.photo} alt={p.name} className="w-full h-full object-cover" /> : <PackageIcon className="w-5 h-5 text-muted-foreground/40" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold truncate">{p.name}</h3>
-                      <Badge variant="outline" className="text-[10px] shrink-0" style={{ borderColor: getCategoryColor(p.categoryId), color: getCategoryColor(p.categoryId) }}>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold truncate" title={p.name}>{p.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{p.sku}</span>
+                        {p.hasVariants && <span className="text-[9px] bg-primary/10 text-primary px-1 rounded w-max mt-0.5">{p.variants?.length || 0} Varian</span>}
+                      </div>
+                      <Badge variant="outline" className="text-[10px] shrink-0 ml-auto" style={{ borderColor: getCategoryColor(p.categoryId), color: getCategoryColor(p.categoryId) }}>
                         {getCategoryName(p.categoryId)}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t('card.sku')}: {p.sku || '-'}</p>
-                    {p.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 whitespace-pre-line">
-                        {p.description}
-                      </p>
-                    )}
                     <div className="flex items-center gap-3 mt-1.5">
-                      <span className="text-sm font-bold text-primary">{rp(p.price)}</span>
-                      <span className="text-xs text-muted-foreground">{t('card.hpp')}: {rp(p.hpp)}</span>
+                      <span className="text-sm font-bold text-primary">
+                        {p.hasVariants && p.variants && p.variants.length > 0 ? (
+                          (() => {
+                            const prices = p.variants.map(v => v.price);
+                            const min = Math.min(...prices);
+                            const max = Math.max(...prices);
+                            return min === max ? rp(min) : `${rp(min)} - ${rp(max)}`;
+                          })()
+                        ) : (rp(p.price))}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       {isStockManaged(p) ? (
-                        <span className={cn('text-xs font-medium px-1.5 py-0.5 rounded', p.stock <= 5 ? 'bg-destructive/10 text-destructive' : 'bg-success/10 text-success')}>
-                          {t('card.stock')}: {p.stock} {p.unit}
+                        <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded', p.stock <= 5 ? 'bg-destructive/10 text-destructive' : 'bg-success/10 text-success')}>
+                          Stok: {p.stock} {p.unit}
                         </span>
                       ) : (
-                        <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary flex items-center gap-1">
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-primary/10 text-primary flex items-center gap-1">
                           <InfinityIcon className="w-3 h-3" />
-                          {t('card.stockUnmanaged')}
+                          Unmanaged
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">
-                    {canManage ? (
+                    {canManage && (
                       <>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}>
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(p.id!)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}><Edit2 className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(p.id!)}><Trash2 className="w-3.5 h-3.5" /></Button>
                       </>
-                    ) : null}
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -686,144 +565,85 @@ export default function Produk() {
         </div>
       )}
 
-      {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-[95vw] rounded-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editProduct ? t('dialog.titleEdit') : t('dialog.titleAdd')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
-            {/* Photo picker */}
             <div className="space-y-1.5">
               <Label>{t('dialog.photoLabel')}</Label>
               <div className="flex items-center gap-3">
-                <div
-                  className="w-20 h-20 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary/50 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {photo ? (
-                    <img src={photo} alt={t('dialog.photoPreviewAlt')} className="w-full h-full object-cover" />
-                  ) : (
-                    <Camera className="w-6 h-6 text-muted-foreground/50" />
-                  )}
+                <div className="w-20 h-20 rounded-xl bg-muted border-2 border-dashed border-border flex items-center justify-center overflow-hidden cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                  {photo ? <img src={photo} className="w-full h-full object-cover" /> : <Camera className="w-6 h-6 text-muted-foreground/50" />}
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs gap-1.5"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    {photo ? t('dialog.photoChange') : t('dialog.photoSelect')}
-                  </Button>
-                  {photo && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-xs text-destructive gap-1.5"
-                      onClick={() => setPhoto(undefined)}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      {t('dialog.photoRemove')}
-                    </Button>
-                  )}
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => fileInputRef.current?.click()}>Ubah Foto</Button>
+                  {photo && <Button type="button" variant="ghost" size="sm" className="h-8 text-xs text-destructive" onClick={() => setPhoto(undefined)}>Hapus</Button>}
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoSelect}
-                />
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label>{t('dialog.nameLabel')} *</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('dialog.namePlaceholder')} className="h-11" />
+              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Contoh: Kopi Susu" className="h-11" />
             </div>
-            <div className="space-y-1.5">
-              <Label>{t('dialog.skuLabel')} *</Label>
-              <div className="flex gap-2">
-                <Input value={sku} onChange={e => setSku(e.target.value)} placeholder={t('dialog.skuPlaceholder')} className="h-11 flex-1" />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-11 w-11 shrink-0"
-                  title={t('dialog.scanCamera')}
-                  onClick={() => setScanTarget('sku')}
-                >
-                  <ScanLine className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+
             <div className="space-y-1.5">
               <Label>{t('dialog.categoryLabel')} *</Label>
               <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger className="h-11"><SelectValue placeholder={t('dialog.categoryPlaceholder')} /></SelectTrigger>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Pilih kategori" /></SelectTrigger>
                 <SelectContent>
                   {(categories && categories.length > 0) ? categories.map(c => (
                     <SelectItem key={c.id} value={c.id!.toString()}>{c.icon} {c.name}</SelectItem>
-                  )) : (
-                    <SelectItem value="__empty" disabled>{t('dialog.categoryEmpty')}</SelectItem>
-                  )}
+                  )) : <SelectItem value="__empty" disabled>Tidak ada kategori</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>{t('dialog.priceLabel')} *</Label>
-                <Input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder={t('dialog.pricePlaceholder')} className="h-11" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('dialog.hppLabel')}</Label>
-                <Input type="number" value={hpp} onChange={e => setHpp(e.target.value)} placeholder={t('dialog.hppPlaceholder')} className="h-11" />
-              </div>
+
+            <div className="flex items-center justify-between mt-4 mb-2">
+              <Label htmlFor="has-variants" className="cursor-pointer">Produk memiliki varian (M/L/XL, dll)</Label>
+              <Switch id="has-variants" checked={hasVariants} onCheckedChange={setHasVariants} />
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-border p-3">
-              <div className="space-y-0.5 pr-3">
-                <Label className="text-sm">{t('dialog.manageStockLabel')}</Label>
-                <p className="text-[11px] text-muted-foreground leading-snug">
-                  {trackStock
-                    ? t('dialog.stockEnabledHint')
-                    : t('dialog.stockDisabledHint')}
-                </p>
-              </div>
-              <Switch checked={trackStock} onCheckedChange={setTrackStock} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {trackStock && (
+
+            {!hasVariants ? (
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>{t('dialog.stockLabel')}</Label>
-                  <Input type="number" value={stock} onChange={e => setStock(e.target.value)} placeholder={t('dialog.stockPlaceholder')} className="h-11" />
+                  <Label>SKU *</Label>
+                  <div className="relative"><Input value={sku} onChange={e => setSku(e.target.value)} placeholder="SKU001" className="pr-10" /><Button variant="ghost" size="icon" className="absolute right-0 top-0 h-full text-muted-foreground" onClick={() => setScanTarget('sku')}><Camera className="w-4 h-4" /></Button></div>
                 </div>
-              )}
-              <div className={cn('space-y-1.5', !trackStock && 'col-span-2')}>
-                <Label>{t('dialog.unitLabel')}</Label>
-                <Select value={unit} onValueChange={setUnit}>
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {unitOptions.length === 0 ? (
-                      <SelectItem value="pcs">pcs</SelectItem>
-                    ) : (
-                      unitOptions.map(u => (
-                        <SelectItem key={u} value={u}>{u}</SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-1.5">
+                  <Label>Harga *</Label>
+                  <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{currencySymbol}</span><Input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="15000" className="pl-9" /></div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>HPP</Label>
+                  <div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{currencySymbol}</span><Input type="number" value={hpp} onChange={e => setHpp(e.target.value)} placeholder="10000" className="pl-9" /></div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="flex items-center justify-between"><span>Stok</span><Switch checked={trackStock} onCheckedChange={setTrackStock} /></Label>
+                  <div className="relative"><Input type="number" value={stock} onChange={e => setStock(e.target.value)} placeholder="100" className="pr-16" disabled={!trackStock} /><div className="absolute right-0 top-0 h-full flex items-center pr-1 text-muted-foreground"><Select value={unit} onValueChange={setUnit}><SelectTrigger className="h-7 border-0 shadow-none text-xs w-[60px] px-1 bg-transparent focus:ring-0"><SelectValue placeholder="Satuan" /></SelectTrigger><SelectContent align="end">{unitOptions.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent></Select></div></div>
+                </div>
               </div>
-            </div>
-            <div className="space-y-1.5">
+            ) : (
+              <div className="space-y-3 bg-muted/30 p-3 rounded-lg border border-border mt-2">
+                <div className="flex items-center justify-between"><Label>Daftar Varian</Label><Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => { const id = crypto.randomUUID(); setVariants([...variants, { id, name: '', sku: `${sku}-${variants.length + 1}`, price: 0, hpp: 0, stock: 0 }]); }}>+ Tambah Varian</Button></div>
+                {variants.map((variant, index) => (
+                  <div key={variant.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start border-b pb-2 last:border-0 last:pb-0">
+                    <div className="space-y-1"><Input placeholder="Nama (Large)" className="h-8 text-xs" value={variant.name} onChange={(e) => { const newV = [...variants]; newV[index].name = e.target.value; setVariants(newV); }} /><Input placeholder="SKU Varian" className="h-8 text-xs" value={variant.sku} onChange={(e) => { const newV = [...variants]; newV[index].sku = e.target.value; setVariants(newV); }} /></div>
+                    <div className="space-y-1"><Input type="number" placeholder="Harga" className="h-8 text-xs" value={variant.price || ''} onChange={(e) => { const newV = [...variants]; newV[index].price = Number(e.target.value) || 0; setVariants(newV); }} /><Input type="number" placeholder="HPP" className="h-8 text-xs" value={variant.hpp || ''} onChange={(e) => { const newV = [...variants]; newV[index].hpp = Number(e.target.value) || 0; setVariants(newV); }} /></div>
+                    <div className="space-y-1"><Input type="number" placeholder="Stok" className="h-8 text-xs" value={variant.stock || ''} disabled={!trackStock} onChange={(e) => { const newV = [...variants]; newV[index].stock = Number(e.target.value) || 0; setVariants(newV); }} /></div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => { const newV = [...variants]; newV.splice(index, 1); setVariants(newV); }}><X className="w-4 h-4" /></Button>
+                  </div>
+                ))}
+                {variants.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">Belum ada varian ditambahkan</p>}
+              </div>
+            )}
+
+            <div className="space-y-1.5 mt-2">
               <Label>{t('dialog.barcodeLabel')}</Label>
               <div className="flex gap-2">
-                <Input value={barcode} onChange={e => setBarcode(e.target.value)} placeholder={t('dialog.barcodePlaceholder')} className="h-11 flex-1" />
-                <Button
-                  type="button"
                   variant="outline"
                   size="icon"
                   className="h-11 w-11 shrink-0"

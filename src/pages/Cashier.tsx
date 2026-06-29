@@ -24,9 +24,11 @@ import { trackEvent } from '@/lib/analytics';
 import CustomerPicker from '@/components/CustomerPicker';
 import LockedPage from '@/components/LockedPage';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { audit } from '@/lib/audit';
 
 interface CartItem {
   product: Product;
+  variant?: import('@/lib/db').ProductVariant;
   qty: number;
   discountType: 'percentage' | 'nominal' | null;
   discountValue: number;
@@ -75,10 +77,10 @@ export default function Kasir() {
   const [tempDiscountType, setTempDiscountType] = useState<'percentage' | 'nominal'>('nominal');
   const [tempDiscountValue, setTempDiscountValue] = useState('');
   // Item-level discount dialog state
-  const [itemDiscountTargetId, setItemDiscountTargetId] = useState<number | null>(null);
+  const [itemDiscountTargetIndex, setItemDiscountTargetIndex] = useState<number | null>(null);
   const [itemDiscountType, setItemDiscountType] = useState<'percentage' | 'nominal'>('nominal');
   const [itemDiscountValue, setItemDiscountValue] = useState('');
-  const [paymentMethodId, setPaymentMethodId] = useState<string>('');
+  const [paymentMethodId, setPaymentMethodId] = useState('');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [useDebt, setUseDebt] = useState(false);
   const [isQuickAdding, setIsQuickAdding] = useState(false);
@@ -86,9 +88,12 @@ export default function Kasir() {
   const [lastTransaction, setLastTransaction] = useState<Transaction | null>(null);
   const [lastTxItems, setLastTxItems] = useState<TransactionItemRecord[]>([]);
   const [customerName, setCustomerName] = useState('');
-  const [customerId, setCustomerId] = useState<number | undefined>(undefined);
+  const [customerId, setCustomerId] = useState<number | undefined>();
   const [tableNumber, setTableNumber] = useState('');
   const [remarks, setRemarks] = useState('');
+
+  // Variant Modal
+  const [variantProduct, setVariantProduct] = useState<Product | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [openBillsOpen, setOpenBillsOpen] = useState(false);
   const [editingItemNotes, setEditingItemNotes] = useState<number | null>(null);
@@ -145,40 +150,58 @@ export default function Kasir() {
 
   // === Cart Operations ===
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, variant?: import('@/lib/db').ProductVariant) => {
+    if (product.hasVariants && product.variants && product.variants.length > 0 && !variant) {
+      setVariantProduct(product);
+      return;
+    }
+
     setCart(prev => {
-      const existing = prev.find(c => c.product.id === product.id);
-      if (existing) {
-        if (isStockManaged(product) && existing.qty >= product.stock) {
+      const existingIndex = prev.findIndex(c => c.product.id === product.id && c.variant?.id === variant?.id);
+      if (existingIndex !== -1) {
+        const existing = prev[existingIndex];
+        const stockCheck = variant ? variant.stock : product.stock;
+        if (isStockManaged(product) && existing.qty >= stockCheck) {
           toast.error(t('cashier.toast.stockLow'));
           return prev;
         }
-        return prev.map(c => c.product.id === product.id ? { ...c, qty: c.qty + 1 } : c);
+        const newCart = [...prev];
+        newCart[existingIndex] = { ...existing, qty: existing.qty + 1 };
+        return newCart;
       }
-      return [...prev, { product, qty: 1, discountType: null, discountValue: 0 }];
+      return [...prev, { product, variant, qty: 1, discountType: null, discountValue: 0 }];
+    });
+    setVariantProduct(null);
+  };
+
+  const updateQty = (index: number, delta: number) => {
+    setCart(prev => {
+      const newCart = [...prev];
+      const item = newCart[index];
+      if (!item) return prev;
+      const newQty = item.qty + delta;
+      if (newQty <= 0) return prev;
+      const stockCheck = item.variant ? item.variant.stock : item.product.stock;
+      if (isStockManaged(item.product) && newQty > stockCheck) { toast.error(t('cashier.toast.stockLow')); return prev; }
+      item.qty = newQty;
+      return newCart;
     });
   };
 
-  const updateQty = (productId: number, delta: number) => {
-    setCart(prev => prev.map(c => {
-      if (c.product.id !== productId) return c;
-      const newQty = c.qty + delta;
-      if (newQty <= 0) return c;
-      if (isStockManaged(c.product) && newQty > c.product.stock) { toast.error(t('cashier.toast.stockLow')); return c; }
-      return { ...c, qty: newQty };
-    }));
+  const removeFromCart = (index: number) => {
+    setCart(prev => prev.filter((_, i) => i !== index));
   };
 
-  const removeFromCart = (productId: number) => {
-    setCart(prev => prev.filter(c => c.product.id !== productId));
+  const updateItemNotes = (index: number, notes: string) => {
+    setCart(prev => {
+      const newCart = [...prev];
+      if (newCart[index]) newCart[index].notes = notes.trim() || undefined;
+      return newCart;
+    });
   };
 
-  const updateItemNotes = (productId: number, notes: string) => {
-    setCart(prev => prev.map(c => c.product.id === productId ? { ...c, notes: notes.trim() || undefined } : c));
-  };
-
-  const openItemDiscount = (item: CartItem) => {
-    setItemDiscountTargetId(item.product.id!);
+  const openItemDiscount = (item: CartItem, index: number) => {
+    setItemDiscountTargetIndex(index);
     if (item.discountType) {
       setItemDiscountType(item.discountType);
       setItemDiscountValue(String(item.discountValue));
@@ -189,34 +212,45 @@ export default function Kasir() {
   };
 
   const saveItemDiscount = () => {
-    if (itemDiscountTargetId == null) return;
+    if (itemDiscountTargetIndex == null) return;
     const raw = Number(itemDiscountValue) || 0;
-    setCart(prev => prev.map(c => {
-      if (c.product.id !== itemDiscountTargetId) return c;
+    setCart(prev => {
+      const newCart = [...prev];
+      const item = newCart[itemDiscountTargetIndex];
+      if (!item) return prev;
       if (raw <= 0) {
-        return { ...c, discountType: null, discountValue: 0 };
+        item.discountType = null;
+        item.discountValue = 0;
+        return newCart;
       }
-      const base = c.product.price * c.qty;
+      const price = item.variant ? item.variant.price : item.product.price;
+      const base = price * item.qty;
       const clamped = itemDiscountType === 'percentage'
         ? Math.min(100, raw)
         : Math.min(base, raw);
-      return { ...c, discountType: itemDiscountType, discountValue: clamped };
-    }));
-    setItemDiscountTargetId(null);
+      item.discountType = itemDiscountType;
+      item.discountValue = clamped;
+      return newCart;
+    });
+    setItemDiscountTargetIndex(null);
   };
 
   const clearItemDiscount = () => {
-    if (itemDiscountTargetId == null) return;
-    setCart(prev => prev.map(c =>
-      c.product.id === itemDiscountTargetId
-        ? { ...c, discountType: null, discountValue: 0 }
-        : c
-    ));
-    setItemDiscountTargetId(null);
+    if (itemDiscountTargetIndex == null) return;
+    setCart(prev => {
+      const newCart = [...prev];
+      if (newCart[itemDiscountTargetIndex]) {
+        newCart[itemDiscountTargetIndex].discountType = null;
+        newCart[itemDiscountTargetIndex].discountValue = 0;
+      }
+      return newCart;
+    });
+    setItemDiscountTargetIndex(null);
   };
 
   const getItemDiscountAmount = (item: CartItem) => {
-    const base = item.product.price * item.qty;
+    const price = item.variant ? item.variant.price : item.product.price;
+    const base = price * item.qty;
     if (item.discountType === 'percentage') {
       const pct = Math.min(100, Math.max(0, item.discountValue));
       return base * pct / 100;
@@ -228,7 +262,8 @@ export default function Kasir() {
   };
 
   const getItemSubtotal = (item: CartItem) => {
-    const base = item.product.price * item.qty;
+    const price = item.variant ? item.variant.price : item.product.price;
+    const base = price * item.qty;
     return Math.max(0, base - getItemDiscountAmount(item));
   };
 
@@ -244,7 +279,11 @@ export default function Kasir() {
   const debtAmount = useDebt ? Math.max(0, total - checkoutPaidAmount) : 0;
   const change = useDebt ? 0 : paidAmount - total;
   const totalItemDiscount = cart.reduce((sum, item) => sum + getItemDiscountAmount(item), 0);
-  const totalProfit = cart.reduce((sum, item) => sum + (item.product.price - item.product.hpp) * item.qty, 0) - totalItemDiscount - txDiscountAmount;
+  const totalProfit = cart.reduce((sum, item) => {
+    const price = item.variant ? item.variant.price : item.product.price;
+    const hpp = item.variant ? item.variant.hpp : item.product.hpp;
+    return sum + (price - hpp) * item.qty;
+  }, 0) - totalItemDiscount - txDiscountAmount;
 
   // === Open Bill Operations ===
 
@@ -275,8 +314,10 @@ export default function Kasir() {
         productId: c.product.id!,
         productName: c.product.name,
         quantity: c.qty,
-        price: c.product.price,
-        hpp: c.product.hpp,
+        price: c.variant ? c.variant.price : c.product.price,
+        hpp: c.variant ? c.variant.hpp : c.product.hpp,
+        variantId: c.variant?.id,
+        variantName: c.variant?.name,
         discountType: c.discountType,
         discountValue: c.discountValue,
         discountAmount: getItemDiscountAmount(c),
@@ -334,14 +375,17 @@ export default function Kasir() {
       };
 
       const txId = await db.transactions.add(txData);
+      await audit.create('transaction', txId as number, receiptNumber, 'Save open bill', currentUser);
 
       const itemRecords: TransactionItemRecord[] = cart.map(c => ({
         transactionId: txId as number,
         productId: c.product.id!,
         productName: c.product.name,
         quantity: c.qty,
-        price: c.product.price,
-        hpp: c.product.hpp,
+        price: c.variant ? c.variant.price : c.product.price,
+        hpp: c.variant ? c.variant.hpp : c.product.hpp,
+        variantId: c.variant?.id,
+        variantName: c.variant?.name,
         discountType: c.discountType,
         discountValue: c.discountValue,
         discountAmount: getItemDiscountAmount(c),
@@ -370,8 +414,10 @@ export default function Kasir() {
     const cartItems: CartItem[] = items.map(item => {
       const product = allProducts.find(p => p.id === item.productId);
       if (!product) throw new Error(t('cashier.toast.productNotFoundLoadBill', { name: item.productName }));
+      const variant = item.variantId ? product.variants?.find(v => v.id === item.variantId) : undefined;
       return {
         product,
+        variant,
         qty: item.quantity,
         discountType: item.discountType as 'percentage' | 'nominal' | null,
         discountValue: item.discountValue,
@@ -402,6 +448,7 @@ export default function Kasir() {
     }
     await db.transactionItems.where('transactionId').equals(tx.id).delete();
     await db.transactions.delete(tx.id);
+    await audit.delete('transaction', tx.id, tx.receiptNumber, 'Cancel open bill', currentUser);
     toast.success(t('cashier.toast.billCancelled', { receiptNumber: tx.receiptNumber }));
     setCancelDialogOpen(false);
     setCancelTargetTx(null);
@@ -487,8 +534,10 @@ export default function Kasir() {
         productId: c.product.id!,
         productName: c.product.name,
         quantity: c.qty,
-        price: c.product.price,
-        hpp: c.product.hpp,
+        price: c.variant ? c.variant.price : c.product.price,
+        hpp: c.variant ? c.variant.hpp : c.product.hpp,
+        variantId: c.variant?.id,
+        variantName: c.variant?.name,
         discountType: c.discountType,
         discountValue: c.discountValue,
         discountAmount: getItemDiscountAmount(c),
@@ -519,6 +568,7 @@ export default function Kasir() {
       }
 
       const updatedTx = await db.transactions.get(editingTxId);
+      await audit.update('transaction', editingTxId, updatedTx?.receiptNumber || 'Unknown', 'Checkout open bill', currentUser);
       toast.success(t('cashier.toast.transactionSuccess', { receiptNumber: updatedTx?.receiptNumber }));
       trackEvent('create_transaction');
       setLastTransaction(updatedTx || null);
@@ -549,6 +599,7 @@ export default function Kasir() {
       };
 
       const txId = await db.transactions.add(txData);
+      await audit.create('transaction', txId as number, receiptNumber, 'Checkout transaction', currentUser);
 
       if (debtAmount > 0) {
         await db.debts.add({
@@ -568,8 +619,10 @@ export default function Kasir() {
         productId: c.product.id!,
         productName: c.product.name,
         quantity: c.qty,
-        price: c.product.price,
-        hpp: c.product.hpp,
+        price: c.variant ? c.variant.price : c.product.price,
+        hpp: c.variant ? c.variant.hpp : c.product.hpp,
+        variantId: c.variant?.id,
+        variantName: c.variant?.name,
         discountType: c.discountType,
         discountValue: c.discountValue,
         discountAmount: getItemDiscountAmount(c),
@@ -1564,6 +1617,37 @@ export default function Kasir() {
               </div>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Variant Select Dialog */}
+      <Dialog open={!!variantProduct} onOpenChange={(open) => !open && setVariantProduct(null)}>
+        <DialogContent className="max-w-[90vw] sm:max-w-md rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Pilih Varian - {variantProduct?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {variantProduct?.variants?.map((v) => (
+              <button
+                key={v.id}
+                onClick={() => addToCart(variantProduct, v)}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
+              >
+                <div>
+                  <p className="font-semibold text-sm">{v.name}</p>
+                  <p className="text-xs text-muted-foreground">{v.sku}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-primary">{rp(v.price)}</p>
+                  {isStockManaged(variantProduct) && (
+                    <p className={cn("text-xs", v.stock <= 5 ? "text-destructive" : "text-success")}>
+                      Stok: {v.stock}
+                    </p>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
 

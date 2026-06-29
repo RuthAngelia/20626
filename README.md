@@ -229,41 +229,6 @@ New COGS = ((Old Stock × Old COGS) + (New Qty × Buy Price)) / (Old Stock + New
 ```
 
 ---
-
-## 💬 Feedback & Feature Requests
-
-Got suggestions, feature ideas, or found a bug? Submit and vote on our board:
-
-👉 **[kasirgratisan.fider.io](https://kasirgratisan.fider.io/)**
-
----
-
-## 👥 Community
-
-Join the Telegram group to discuss the app, ask questions, and share tips with other users:
-
-👉 **[t.me/kasirgratisan](https://t.me/kasirgratisan)**
-
----
-
-## ☕ Support the Developer
-
-FreeKasir is built and maintained for free. If you find it useful, you can buy the developer a coffee to support continued development:
-
-👉 **[traktir.jipraks.com](https://traktir.jipraks.com/)**
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how:
-
-1. Fork this repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes (`git commit -m 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Open a Pull Request
-
 ### Guidelines
 
 - UI text uses **i18next** — add new strings to `src/i18n/locales/{id,en,ms}/` JSON files inside the appropriate namespace (`common`, `settings`, `products`, `reports`, `dashboard`, `onboarding`)

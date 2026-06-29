@@ -219,7 +219,7 @@ export default function Receipt({ open, onClose, transaction, items, storeSettin
           {/* Items */}
           {items.map((item, i) => (
             <div key={i} className="mb-1">
-              <p className="text-[11px] font-medium">{item.productName}</p>
+              <p className="text-[11px] font-medium">{item.productName}{item.variantName ? ` - ${item.variantName}` : ''}</p>
               {item.notes && <p className="text-[9px] text-gray-500 italic">  {item.notes}</p>}
               <div className="flex justify-between text-[10px]">
                 <span>{item.quantity} x {rp(item.price)}</span>
