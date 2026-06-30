@@ -573,6 +573,20 @@ export default function Pengaturan() {
       <div className="space-y-2">
         <h2 className="text-sm font-semibold text-muted-foreground">{t('masterData.sectionTitle')}</h2>
 
+        
+        {can('manage_store_settings') && (
+          <Card className="border-0 shadow-sm mb-2">
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-info/10 text-info flex items-center justify-center"><Volume2 className="w-4 h-4" /></div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold">Suara Kasir</p>
+                <p className="text-[10px] text-muted-foreground">Aktifkan efek suara Ka-ching!</p>
+              </div>
+              <Switch checked={storeSettings?.soundEnabled ?? false} onCheckedChange={async (c) => await db.storeSettings.update(storeSettings!.id!, { soundEnabled: c })} />
+            </CardContent>
+          </Card>
+        )}
+
         {can('manage_store_settings') && (
           <Card className="border-0 shadow-sm mb-2">
             <CardContent className="p-3 flex items-center gap-3">

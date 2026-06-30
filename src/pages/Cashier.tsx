@@ -1068,6 +1068,27 @@ export default function Kasir() {
                   <span>{t('cashier.cartDiscount.add')}</span>
                 </button>
               )}
+              
+              <div className="flex gap-2">
+                {txTaxAmount > 0 ? (
+                  <button onClick={() => { setTempTaxType(txTaxType!); setTempTaxValue(txTaxValue); setTaxDialogOpen(true); }} className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary font-medium border border-primary/30 rounded p-1">
+                    Pajak: {txTaxType === 'percentage' ? `${txTaxValue}%` : rp(Number(txTaxValue))}
+                  </button>
+                ) : (
+                  <button onClick={() => { setTempTaxType('percentage'); setTempTaxValue(''); setTaxDialogOpen(true); }} className="flex-1 flex items-center justify-center gap-1.5 text-xs text-muted-foreground border rounded p-1 hover:text-primary transition-colors">
+                    + Pajak
+                  </button>
+                )}
+                {txServiceFeeAmount > 0 ? (
+                  <button onClick={() => { setTempServiceFeeType(txServiceFeeType!); setTempServiceFeeValue(txServiceFeeValue); setServiceFeeDialogOpen(true); }} className="flex-1 flex items-center justify-center gap-1.5 text-xs text-primary font-medium border border-primary/30 rounded p-1">
+                    Layanan: {txServiceFeeType === 'percentage' ? `${txServiceFeeValue}%` : rp(Number(txServiceFeeValue))}
+                  </button>
+                ) : (
+                  <button onClick={() => { setTempServiceFeeType('percentage'); setTempServiceFeeValue(''); setServiceFeeDialogOpen(true); }} className="flex-1 flex items-center justify-center gap-1.5 text-xs text-muted-foreground border rounded p-1 hover:text-primary transition-colors">
+                    + Layanan
+                  </button>
+                )}
+              </div>
 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">{t('cashier.cartDiscount.subtotal')}</span>
